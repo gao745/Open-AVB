@@ -819,10 +819,17 @@ public:
 	 * @param  pdelay_count Counts of pdelays
 	 * @param  port_state PortState information
      * @param  asCapable asCapable flag
+	 * @param  grandmaster_id Grandmaster ID
+	 * @param  grandmaster_clock_quality Grandmaster clock quality
+	 * @param  local_clock_quality Local clock quality
 	 * @return TRUE if sucess; FALSE if error
 	 */
-	virtual bool update(int64_t ml_phoffset, int64_t ls_phoffset, FrequencyRatio ml_freqoffset, FrequencyRatio ls_freq_offset, uint64_t local_time,
-		uint32_t sync_count, uint32_t pdelay_count, PortState port_state, bool asCapable);
+	virtual bool update
+	(int64_t ml_phoffset, int64_t ls_phoffset, FrequencyRatio ml_freqoffset,
+	 FrequencyRatio ls_freq_offset, uint64_t local_time, uint32_t sync_count,
+	 uint32_t pdelay_count, PortState port_state, bool asCapable,
+	 uint8_t* grandmaster_id, ClockQuality grandmaster_clock_quality,
+	 ClockQuality local_clock_quality );
 };
 
 #endif

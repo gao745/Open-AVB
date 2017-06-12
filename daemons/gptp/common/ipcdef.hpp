@@ -61,6 +61,7 @@
 #endif /*__unix__ / _WIN*/
 
 #include <ptptypes.hpp>
+#include <ieee1588.hpp>
 
 /**
  * @brief Provides a data structure for gPTP time
@@ -76,6 +77,9 @@ typedef struct {
     bool asCapable;                 //!< asCapable flag: true = device is AS Capable; false otherwise
     PortState port_state;			//!< gPTP port state. It can assume values defined at ::PortState
     PID_TYPE process_id;			//!< Process id number
+    uint8_t grandmaster_id[PTP_CLOCK_IDENTITY_LENGTH];	//!< Grandmaster id number
+    ClockQuality grandmaster_clock_quality;				//!< Grandmaster clock quality
+    ClockQuality local_clock_quality;					//!< Local clock quality
 } gPtpTimeData;
 
 /*

@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <ptptypes.hpp>
 #include <avbts_port.hpp>
+#include <ieee1588.hpp>
 
 /**@file*/
 
@@ -72,13 +73,18 @@ public:
 	 * @param pdelay_count Count of pdelays
 	 * @param port_state Port's state
      * @param asCapable asCapable flag
+	 * @param grandmaster_id Grandmaster's id
+	 * @param grandmaster_clock_quality Grandmaster's clock quality
+	 * @param local_clock_quality Local clock quality
 	 * @return Implementation dependent.
 	 */
     virtual bool update
 	( int64_t  ml_phoffset, int64_t ls_phoffset,
 	  FrequencyRatio  ml_freqoffset, FrequencyRatio ls_freq_offset,
 	  uint64_t local_time, uint32_t sync_count, uint32_t pdelay_count,
-	  PortState port_state, bool asCapable ) = 0;
+	  PortState port_state, bool asCapable, uint8_t* grandmaster_id,
+	  ClockQuality grandmaster_clock_quality,
+	  ClockQuality local_clock_quality) = 0;
 
 	/*
 	 * Destroys IPC
