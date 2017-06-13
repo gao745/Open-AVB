@@ -175,9 +175,12 @@ bool WindowsNamedPipeIPC::init(OS_IPC_ARG *arg) {
 	return true;
 }
 
-bool WindowsNamedPipeIPC::update(int64_t ml_phoffset, int64_t ls_phoffset, FrequencyRatio ml_freqoffset, FrequencyRatio ls_freq_offset, uint64_t local_time,
-	uint32_t sync_count, uint32_t pdelay_count, PortState port_state, bool asCapable) {
-
+bool WindowsNamedPipeIPC::update
+	(int64_t ml_phoffset, int64_t ls_phoffset, FrequencyRatio ml_freqoffset,
+	 FrequencyRatio ls_freq_offset, uint64_t local_time, uint32_t sync_count,
+	 uint32_t pdelay_count, PortState port_state, bool asCapable,
+	 uint8_t* grandmaster_id, ClockQuality grandmaster_clock_quality,
+	 ClockQuality local_clock_quality ) {
 
 	lOffset_.get();
 	lOffset_.local_time = local_time;
