@@ -317,7 +317,7 @@ class IEEE1588Port {
 	char log_min_mean_pdelay_req_interval;
 	bool burst_enabled;
 	static const int64_t ONE_WAY_DELAY_DEFAULT = 3600000000000;
-	static const int64_t INVALID_LINKDELAY = 3600000000000;
+	static const uint64_t INVALID_LINKDELAY = 3600000000000;
 	static const int64_t NEIGHBOR_PROP_DELAY_THRESH = 800;
 	static const unsigned int DEFAULT_SYNC_RECEIPT_THRESH = 5;
 	static const unsigned int DUPLICATE_RESP_THRESH = 3;
