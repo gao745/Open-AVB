@@ -118,6 +118,10 @@ ifeq ($(GENIVI_DLT),1)
 	LDFLAGS_G += -ldlt -L$(GENIVI_DLT_LIB_PATH)
 endif
 
+ifeq ($(USE_SYSLOG),1)
+   CFLAGS_G += -DUSE_SYSLOG
+endif
+
 ifeq ($(GPTP_LOG_DEBUG_ON),1)
    CFLAGS_G += -DGPTP_LOG_DEBUG_ON
 endif
