@@ -118,6 +118,14 @@ ifeq ($(GENIVI_DLT),1)
 	LDFLAGS_G += -ldlt -L$(GENIVI_DLT_LIB_PATH)
 endif
 
+ifeq ($(GPTP_LOG_DEBUG_ON),1)
+   CFLAGS_G += -DGPTP_LOG_DEBUG_ON
+endif
+
+ifeq ($(GPTP_LOG_VERBOSE_ON),1)
+   CFLAGS_G += -DGPTP_LOG_VERBOSE_ON
+endif
+
 LDFLAGS_G += -lpthread -lrt
 
 CFLAGS = $(CFLAGS_G)
