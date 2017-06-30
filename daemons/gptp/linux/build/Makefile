@@ -122,6 +122,14 @@ ifeq ($(USE_SYSLOG),1)
    CFLAGS_G += -DUSE_SYSLOG
 endif
 
+ifeq ($(GPTP_LOG_DEBUG_ON),1)
+   CFLAGS_G += -DGPTP_LOG_DEBUG_ON
+endif
+
+ifeq ($(GPTP_LOG_VERBOSE_ON),1)
+   CFLAGS_G += -DGPTP_LOG_VERBOSE_ON
+endif
+
 LDFLAGS_G += -lpthread -lrt
 
 CFLAGS = $(CFLAGS_G)
