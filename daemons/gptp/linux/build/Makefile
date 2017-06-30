@@ -120,6 +120,10 @@ ifeq ($(GENIVI_DLT),1)
 	LDFLAGS_G += -ldlt -L$(GENIVI_DLT_LIB_PATH)
 endif
 
+ifeq ($(USE_SYSLOG),1)
+	CFLAGS_G += -DUSE_SYSLOG
+endif
+
 ifeq ($(SYSTEMD_WATCHDOG),1)
 	CFLAGS_G += -DSYSTEMD_WATCHDOG
 	LDFLAGS_G += -lsystemd
