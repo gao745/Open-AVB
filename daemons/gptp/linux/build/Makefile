@@ -119,15 +119,15 @@ ifeq ($(GENIVI_DLT),1)
 endif
 
 ifeq ($(USE_SYSLOG),1)
-   CFLAGS_G += -DUSE_SYSLOG
+	CFLAGS_G += -DUSE_SYSLOG
 endif
 
 ifeq ($(GPTP_LOG_DEBUG_ON),1)
-   CFLAGS_G += -DGPTP_LOG_DEBUG_ON
+	CFLAGS_G += -DGPTP_LOG_DEBUG_ON
 endif
 
 ifeq ($(GPTP_LOG_VERBOSE_ON),1)
-   CFLAGS_G += -DGPTP_LOG_VERBOSE_ON
+	CFLAGS_G += -DGPTP_LOG_VERBOSE_ON
 endif
 
 LDFLAGS_G += -lpthread -lrt
