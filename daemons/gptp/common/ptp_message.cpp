@@ -1617,6 +1617,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	/* Subtract turn-around time from link delay after rate adjustment */
 	link_delay -= turn_around;
 	link_delay /= 2;
+	GPTP_LOG_DEBUG( "Link delay: %ld ns", link_delay );
 
 	{
 		uint64_t mine_elapsed;
