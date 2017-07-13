@@ -349,7 +349,7 @@ private:
 	OSLock *announceIntervalTimerLock;
 
 protected:
-	static const int64_t INVALID_LINKDELAY = 3600000000000;
+	static const uint64_t INVALID_LINKDELAY = 3600000000000;
 	static const int64_t ONE_WAY_DELAY_DEFAULT = INVALID_LINKDELAY;
 
 	OSThreadFactory const * const thread_factory;
