@@ -33,6 +33,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // MS VC++ 2013 has C++11 but not C11 support, use this to get millisecond resolution
 #include <chrono>
 
+#ifdef USE_SYSLOG
+#include <syslog.h>
+#endif
+
 #ifdef GENIVI_DLT
 DLT_DECLARE_CONTEXT(dlt_con_gptp);
 #endif
@@ -60,6 +64,41 @@ void gptpLog(GPTP_LOG_LEVEL level, const char *tag, const char *path, int line, 
 	va_list args;
 	va_start(args, fmt);
 	vsprintf(msg, fmt, args);
+
+#ifdef USE_SYSLOG
+   int syslog_level;
+
+   switch (level) {
+   case GPTP_LOG_LVL_CRITICAL:
+      syslog_level = LOG_CRIT;
+      break;
+   case GPTP_LOG_LVL_ERROR:
+   case GPTP_LOG_LVL_EXCEPTION:
+      syslog_level = LOG_ERR;
+      break;
+   case GPTP_LOG_LVL_WARNING:
+      syslog_level = LOG_WARNING;
+      break;
+   case GPTP_LOG_LVL_INFO:
+   case GPTP_LOG_LVL_STATUS:
+      syslog_level = LOG_INFO;
+      break;
+   case GPTP_LOG_LVL_DEBUG:
+   case GPTP_LOG_LVL_VERBOSE:
+      syslog_level = LOG_DEBUG;
+      break;
+   default:
+      syslog_level = LOG_INFO;
+      break;
+   }
+
+   if (path) {
+      syslog(syslog_level, "GPTP [%s:%u] %s\n", path, line, msg);
+   }
+   else {
+      syslog(syslog_level, "GPTP %s\n", msg);
+   }
+#endif
 
 #ifndef GENIVI_DLT
 	std::chrono::system_clock::time_point cNow = std::chrono::system_clock::now();
