@@ -259,7 +259,6 @@ void *EtherPort::openPort( EtherPort *port )
 		} else if (rrecv == net_fatal) {
 			GPTP_LOG_ERROR("read from network interface failed");
 			this->processEvent(FAULT_DETECTED);
-			break;
 		}
 	}
 
