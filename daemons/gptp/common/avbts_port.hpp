@@ -404,7 +404,7 @@ class IEEE1588Port {
 
 	OSCondition *port_ready_condition;
 
-	OSLock *pdelay_rx_lock;
+	OSLock *last_pdelay_lock;
 	OSLock *port_tx_lock;
 
 	OSLock *syncReceiptTimerLock;
@@ -955,27 +955,27 @@ class IEEE1588Port {
 	}
 
 	/**
-	 * @brief  Locks PDelay RX
+	 * @brief  Locks the last_pdelay variables
 	 * @return TRUE if acquired the lock. FALSE otherwise
 	 */
-	bool getPDelayRxLock() {
-		return pdelay_rx_lock->lock() == oslock_ok ? true : false;
+	bool getLastPDelayLock() {
+		return last_pdelay_lock->lock() == oslock_ok ? true : false;
 	}
 
 	/**
-	 * @brief  Do a trylock on the PDelay RX
+	 * @brief  Do a trylock for the last_pdelay variables
 	 * @return TRUE if acquired the lock. FALSE otherwise.
 	 */
-	bool tryPDelayRxLock() {
-		return pdelay_rx_lock->trylock() == oslock_ok ? true : false;
+	bool tryLastPDelayLock() {
+		return last_pdelay_lock->trylock() == oslock_ok ? true : false;
 	}
 
 	/**
-	 * @brief  Unlocks PDelay RX.
+	 * @brief  Unlocks the last_pdelay variables
 	 * @return TRUE if success. FALSE otherwise
 	 */
-	bool putPDelayRxLock() {
-		return pdelay_rx_lock->unlock() == oslock_ok ? true : false;
+	bool putLastPDelayLock() {
+		return last_pdelay_lock->unlock() == oslock_ok ? true : false;
 	}
 
 	/**
