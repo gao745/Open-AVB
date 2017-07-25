@@ -1320,8 +1320,8 @@ void PTPMessagePathDelayResp::processMessage( EtherPort *port )
 
 	port->incCounter_ieee8021AsPortStatRxPdelayResponse();
 
-	if (port->tryPDelayRxLock() != true) {
-		GPTP_LOG_ERROR("Failed to get PDelay RX Lock");
+	if (port->getLastPDelayLock() != true) {
+		GPTP_LOG_ERROR("Failed to get last PDelay lock while processing a PDelayResp");
 		return;
 	}
 
@@ -1378,7 +1378,7 @@ bypass_verify_duplicate:
 		delete old_pdelay_resp;
 	}
 
-	port->putPDelayRxLock();
+	port->putLastPDelayLock();
 	_gc = false;
 
 	return;
@@ -1486,8 +1486,10 @@ void PTPMessagePathDelayRespFollowUp::processMessage
 
 	port->incCounter_ieee8021AsPortStatRxPdelayResponseFollowUp();
 
-	if (port->tryPDelayRxLock() != true)
+	if (port->getLastPDelayLock() != true) {
+		GPTP_LOG_ERROR("Failed to get last PDelay lock while processing a PDelay Follow Up");
 		return;
+	}
 
 	PTPMessagePathDelayReq *req = port->getLastPDelayReq();
 	PTPMessagePathDelayResp *resp = port->getLastPDelayResp();
@@ -1706,7 +1708,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage
 	_gc = true;
 
  defer:
-	port->putPDelayRxLock();
+	port->putLastPDelayLock();
 
 	return;
 }
