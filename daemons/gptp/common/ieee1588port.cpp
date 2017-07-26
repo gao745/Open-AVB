@@ -227,7 +227,7 @@ bool IEEE1588Port::init_port(int delay[4])
 
 	this->timestamper_init();
 
-	pdelay_rx_lock = lock_factory->createLock(oslock_recursive);
+	last_pdelay_lock = lock_factory->createLock(oslock_recursive);
 	port_tx_lock = lock_factory->createLock(oslock_recursive);
 
 	syncReceiptTimerLock = lock_factory->createLock(oslock_recursive);
@@ -886,6 +886,11 @@ void IEEE1588Port::processEvent(Event e)
 			unsigned req_timestamp_counter_value;
 			long long wait_time = 0;
 
+			if (getLastPDelayLock() != true) {
+				GPTP_LOG_ERROR("Failed to get last PDelay lock before sending a PDelayReq");
+				break;
+			}
+
 			PTPMessagePathDelayReq *pdelay_req =
 			    new PTPMessagePathDelayReq(this);
 			PortIdentity dest_id;
@@ -972,6 +977,8 @@ void IEEE1588Port::processEvent(Event e)
 					interval : EVENT_TIMER_GRANULARITY;
 				startPDelayIntervalTimer(interval);
 			}
+
+			putLastPDelayLock();
 		}
 		break;
 	case SYNC_INTERVAL_TIMEOUT_EXPIRES:
@@ -1134,7 +1141,10 @@ void IEEE1588Port::processEvent(Event e)
 		break;
 	case PDELAY_DEFERRED_PROCESSING:
 		GPTP_LOG_DEBUG("PDELAY_DEFERRED_PROCESSING occured");
-		pdelay_rx_lock->lock();
+		if (getLastPDelayLock() != true) {
+			GPTP_LOG_ERROR("Failed to get last PDelay lock before processing a deferred PDelay Follow Up");
+			break;
+		}
 		if (last_pdelay_resp_fwup == NULL) {
 			GPTP_LOG_ERROR("PDelay Response Followup is NULL!");
 			abort();
@@ -1144,7 +1154,7 @@ void IEEE1588Port::processEvent(Event e)
 			delete last_pdelay_resp_fwup;
 			this->setLastPDelayRespFollowUp(NULL);
 		}
-		pdelay_rx_lock->unlock();
+		putLastPDelayLock();
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
 		if (!automotive_profile) {
