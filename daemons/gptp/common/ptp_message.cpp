@@ -1461,15 +1461,20 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	uint16_t req_port_number;
 
 	if (req == NULL) {
-		/* Shouldn't happen */
-		GPTP_LOG_ERROR
+		// When an invalid PDelayRespFollowup is recieved, this function deletes
+		// the last_pdelay_req and _resp pointers. So this condition can be hit
+		// when another PDelayRespFollowup is received before a new PDelayReq has
+		// been sent out.
+		GPTP_LOG_DEBUG
 		    (">>> Received PDelay followup but no REQUEST exists");
 		goto abort;
 	}
 
 	if (resp == NULL) {
-		/* Probably shouldn't happen either */
-		GPTP_LOG_ERROR
+		// When an invalid PDelayRespFollowup is recieved, this function deletes
+		// the last_pdelay_req and _resp pointers. So this condition can be hit
+		// when another PDelayRespFollowup is received before a new PDelayResp.
+		GPTP_LOG_DEBUG
 		    (">>> Received PDelay followup but no RESPONSE exists");
 
 		goto abort;
@@ -1485,7 +1490,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	getPortIdentity(&fup_sourcePortIdentity);
 
 	if( req->getSequenceId() != sequenceId ) {
-		GPTP_LOG_ERROR
+		GPTP_LOG_DEBUG
 			(">>> Received PDelay FUP has different seqID than the PDelay request (%d/%d)",
 			 sequenceId, req->getSequenceId() );
 		goto abort;
@@ -1495,7 +1500,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	 * IEEE 802.1AS, Figure 11-8, subclause 11.2.15.3
 	 */
 	if (resp->getSequenceId() != sequenceId) {
-		GPTP_LOG_ERROR
+		GPTP_LOG_DEBUG
 			("Received PDelay Response Follow Up but cannot find "
 			 "corresponding response");
 		GPTP_LOG_ERROR("%hu, %hu, %hu, %hu", resp->getSequenceId(),
@@ -1508,7 +1513,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	 * IEEE 802.1AS, Figure 11-8, subclause 11.2.15.3
 	 */
 	if (req_clkId != resp_clkId ) {
-		GPTP_LOG_ERROR
+		GPTP_LOG_DEBUG
 			("ClockID Resp/Req differs. PDelay Response ClockID: %s PDelay Request ClockID: %s",
 			 req_clkId.getIdentityString().c_str(), resp_clkId.getIdentityString().c_str() );
 		goto abort;
@@ -1518,7 +1523,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	 * IEEE 802.1AS, Figure 11-8, subclause 11.2.15.3
 	 */
 	if ( resp_port_number != req_port_number ) {
-		GPTP_LOG_ERROR
+		GPTP_LOG_DEBUG
 			("Request port number (%hu) is different from Response port number (%hu)",
 				resp_port_number, req_port_number);
 
@@ -1529,7 +1534,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 	 * IEEE 802.1AS, Figure 11-8, subclause 11.2.15.3
 	 */
 	if ( fup_sourcePortIdentity != resp_sourcePortIdentity ) {
-		GPTP_LOG_ERROR("Source port identity from PDelay Response/FUP differ");
+		GPTP_LOG_DEBUG("Source port identity from PDelay Response/FUP differ");
 
 		goto abort;
 	}
@@ -1644,12 +1649,13 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 		}
 	}
 	if( !port->setLinkDelay( link_delay ) ) {
-		if (!port->getAutomotiveProfile()) {
-			GPTP_LOG_ERROR("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
+		if (!port->getAutomotiveProfile() && (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
+			GPTP_LOG_STATUS("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
 			port->setAsCapable( false );
 		}
 	} else {
-		if (!port->getAutomotiveProfile()) {
+		if (!port->getAutomotiveProfile() && !port->getAsCapable() ) {
+			GPTP_LOG_STATUS("Link delay %ld within neighborPropDelayThresh; setting AsCapable", link_delay);
 			port->setAsCapable( true );
 		}
 	}

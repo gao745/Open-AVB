@@ -340,6 +340,7 @@ class IEEE1588Port {
 	bool _syntonize;
 
 	bool asCapable;
+	bool asCapableEvaluated;
 
 	/* Automotive Profile : Static variables */
 	// port_state : already defined as port_state
@@ -573,6 +574,7 @@ class IEEE1588Port {
 	 * @return void
 	 */
 	void restartPDelay() {
+		reinitializeAsCapable();
 		_peer_offset_init = false;
 	}
 
@@ -590,6 +592,19 @@ class IEEE1588Port {
 			_peer_offset_init = false;
 		}
 		asCapable = ascap;
+
+		// Assumes that a call to setAsCapable() means that 802.1AS capability
+		// has been evaluated.
+		asCapableEvaluated = true;
+	}
+
+	/**
+	 * @brief  Reinitializes the asCapable variables
+	 * @return void
+	 */
+	void reinitializeAsCapable() {
+		asCapable = false;
+		asCapableEvaluated = false;
 	}
 
 	/**
@@ -597,6 +612,12 @@ class IEEE1588Port {
 	 * @return asCapable flag.
 	 */
 	bool getAsCapable() { return( asCapable ); }
+
+	/**
+	 * @brief  Checks if 802.1AS capability has been evaluated at least once
+	 * @return asCapable set at least once.
+	 */
+	bool getAsCapableEvaluated() { return( asCapableEvaluated ); }
 
 	/**
 	 * @brief  Gets the AVnu automotive profile flag
