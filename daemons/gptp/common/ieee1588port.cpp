@@ -712,7 +712,7 @@ void IEEE1588Port::processEvent(Event e)
 		break;
 
 	case LINKUP:
-		haltPdelay(false);
+		stopPDelay();
 		startPDelay();
 		if (automotive_profile) {
 			GPTP_LOG_EXCEPTION("LINKUP");
