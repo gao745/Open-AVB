@@ -521,7 +521,8 @@ void IEEE1588Port::processEvent(Event e)
 			unsigned long long interval4;
 			Event e3 = NULL_EVENT;
 			Event e4 = NULL_EVENT;
-
+			
+			// TODO:Start PDelay only if the link is up.
 			if (!automotive_profile) {
 				if (port_state != PTP_SLAVE && port_state != PTP_MASTER) {
 					GPTP_LOG_STATUS("Starting PDelay");
