@@ -326,6 +326,14 @@ public:
   }
 
   /**
+   * @brief Sets the IEEE 1588 Clock quality
+   * @return void
+  */
+  void setClockQuality( ClockQuality new_clock_quality ) {
+	clock_quality = new_clock_quality;
+  }
+
+  /**
    * @brief  Gets grandmaster priority1 attribute (IEEE 802.1AS-2011 Clause 10.5.3.2.2)
    * @return Grandmaster priority1
    */
