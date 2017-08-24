@@ -393,6 +393,7 @@ bool EtherPort::_processEvent( Event e )
 
 		break;
 	case LINKUP:
+		stopPDelay();
 		haltPdelay(false);
 		startPDelay();
 		if (automotive_profile) {
