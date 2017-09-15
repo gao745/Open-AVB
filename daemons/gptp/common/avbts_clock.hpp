@@ -444,7 +444,7 @@ public:
   * @return automotive_test_mode attribute
   */
   bool getAutomotiveTestMode(void) {
-	 return automotiveTestMode;
+	 return automotive_test_mode;
   }
 
 
