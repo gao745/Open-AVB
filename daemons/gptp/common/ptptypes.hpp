@@ -43,23 +43,32 @@ typedef double FrequencyRatio; /*!< Frequency Ratio */
 typedef long double FrequencyRatio; /*!< Frequency Ratio */
 #endif
 
-#define ETHER_ADDR_OCTETS	6		/*!< Number of octets in a link layer address*/
-#define IP_ADDR_OCTETS		4		/*!< Number of octets in a ip address*/
-#define PTP_ETHERTYPE 0x88F7		/*!< PTP ethertype */
+#define ETHER_ADDR_OCTETS 6   /*!< Number of octets in a link layer address*/
+#define IP_ADDR_OCTETS    4   /*!< Number of octets in a ip address*/
+#define PTP_ETHERTYPE 0x88F7    /*!< PTP ethertype */
 #define AVTP_ETHERTYPE 0x22F0   /*!< AVTP ethertype used for Test Status Message */
 
 /**
  * @brief PortState enumeration
  */
 typedef enum {
-	PTP_MASTER = 7,		//!< Port is PTP Master
-	PTP_PRE_MASTER,		//!< Port is not PTP Master yet.
-	PTP_SLAVE,			//!< Port is PTP Slave
-	PTP_UNCALIBRATED,	//!< Port is uncalibrated.
-	PTP_DISABLED,		//!< Port is not PTP enabled. All messages are ignored when in this state.
-	PTP_FAULTY,			//!< Port is in a faulty state. Recovery is implementation specific.
-	PTP_INITIALIZING,	//!< Port's initial state.
-	PTP_LISTENING		//!< Port is in a PTP listening state. Currently not in use.
+  PTP_MASTER = 7,   //!< Port is PTP Master
+  PTP_PRE_MASTER,   //!< Port is not PTP Master yet.
+  PTP_SLAVE,      //!< Port is PTP Slave
+  PTP_UNCALIBRATED, //!< Port is uncalibrated.
+  PTP_DISABLED,   //!< Port is not PTP enabled. All messages are ignored when in this state.
+  PTP_FAULTY,     //!< Port is in a faulty state. Recovery is implementation specific.
+  PTP_INITIALIZING, //!< Port's initial state.
+  PTP_LISTENING   //!< Port is in a PTP listening state. Currently not in use.
 } PortState;
+
+/**
+* ExtPortConfig enumeration
+*/
+typedef enum {
+  EXT_DISABLED = 0, //!< externalPortConfiguration is disabled
+  EXT_GM = 1, //!< externalPortConfiguration is enabled, port state is gm
+  EXT_SLAVE = 2, //!< externalPortConfiguration is enable, port state is slave
+} ExtPortConfig;
 
 #endif/*PTP_TYPES_HPP*/

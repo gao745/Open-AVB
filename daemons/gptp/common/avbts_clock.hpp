@@ -42,13 +42,13 @@
 
 /**@file*/
 
-#define EVENT_TIMER_GRANULARITY 5000000		/*!< Event timer granularity*/
+#define EVENT_TIMER_GRANULARITY 5000000      /*!< Event timer granularity*/
 
 /* These 4 macros are used only when Syntonize mode is enabled */
-#define INTEGRAL 0.0003				/*!< PI controller integral factor*/
-#define PROPORTIONAL 1.0			/*!< PI controller proportional factor*/
-#define UPPER_FREQ_LIMIT  250.0		/*!< Upper frequency limit */
-#define LOWER_FREQ_LIMIT -250.0		/*!< Lower frequency limit */
+#define INTEGRAL 0.0003          /*!< PI controller integral factor*/
+#define PROPORTIONAL 1.0         /*!< PI controller proportional factor*/
+#define UPPER_FREQ_LIMIT  250.0     /*!< Upper frequency limit */
+#define LOWER_FREQ_LIMIT -250.0     /*!< Lower frequency limit */
 
 #define UPPER_LIMIT_PPM 250
 #define LOWER_LIMIT_PPM -250
@@ -66,60 +66,67 @@
  */
 class IEEE1588Clock {
 private:
-	ClockIdentity clock_identity;
-	ClockQuality clock_quality;
-	unsigned char priority1;
-	unsigned char priority2;
-	bool initializable;
-	bool is_boundary_clock;
-	bool two_step_clock;
-	unsigned char domain_number;
-	uint16_t number_ports;
-	uint16_t number_foreign_records;
-	bool slave_only;
-	int16_t current_utc_offset;
-	bool leap_59;
-	bool leap_61;
-	uint16_t epoch_number;
-	uint16_t steps_removed;
-	int64_t offset_from_master;
-	Timestamp one_way_delay;
-	PortIdentity parent_identity;
-	ClockIdentity grandmaster_clock_identity;
-	ClockQuality grandmaster_clock_quality;
-	unsigned char grandmaster_priority1;
-	unsigned char grandmaster_priority2;
-	bool grandmaster_is_boundary_clock;
-	uint8_t time_source;
+   ClockIdentity clock_identity;
+   ClockQuality clock_quality;
+   unsigned char priority1;
+   unsigned char priority2;
+   bool initializable;
+   bool is_boundary_clock;
+   bool two_step_clock;
+   unsigned char domain_number;
+   uint16_t number_ports;
+   uint16_t number_foreign_records;
+   bool slave_only;
+   int16_t current_utc_offset;
+   bool leap_59;
+   bool leap_61;
+   uint16_t epoch_number;
+   uint16_t steps_removed;
+   int64_t offset_from_master;
+   Timestamp one_way_delay;
+   PortIdentity parent_identity;
+   ClockIdentity grandmaster_clock_identity;
+   ClockQuality grandmaster_clock_quality;
+   unsigned char grandmaster_priority1;
+   unsigned char grandmaster_priority2;
+   bool grandmaster_is_boundary_clock;
+   uint8_t time_source;
 
-	ClockIdentity LastEBestIdentity;
-	bool _syntonize;
-	bool _new_syntonization_set_point;
-	float _ppm;
-	int _phase_error_violation;
+   ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
+   bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
+   bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
+   bool negotiate_sync_rate; // Enable sync rate negotiation? todo: ture or false when external_port_configuration is enabled
+   bool automotive_state;
+   bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
 
-	IEEE1588Port *port_list[MAX_PORTS];
+   ClockIdentity LastEBestIdentity;
+   bool _syntonize;
+   bool _new_syntonization_set_point;
+   float _ppm;
+   int _phase_error_violation;
 
-	static Timestamp start_time;
-	Timestamp last_sync_time;
+   IEEE1588Port *port_list[MAX_PORTS];
 
-	bool _master_local_freq_offset_init;
-	Timestamp _prev_master_time;
-	Timestamp _prev_sync_time;
+   static Timestamp start_time;
+   Timestamp last_sync_time;
 
-	bool _local_system_freq_offset_init;
-	Timestamp _prev_local_time;
-	Timestamp _prev_system_time;
+   bool _master_local_freq_offset_init;
+   Timestamp _prev_master_time;
+   Timestamp _prev_sync_time;
 
-	HWTimestamper *_timestamper;
+   bool _local_system_freq_offset_init;
+   Timestamp _prev_local_time;
+   Timestamp _prev_system_time;
 
-	OS_IPC *ipc;
+   HWTimestamper *_timestamper;
 
-	OSTimerQueue *timerq;
+   OS_IPC *ipc;
 
-	bool forceOrdinarySlave;
-	FrequencyRatio _master_local_freq_offset;
-	FrequencyRatio _local_system_freq_offset;
+   OSTimerQueue *timerq;
+
+   bool forceOrdinarySlave;
+   FrequencyRatio _master_local_freq_offset;
+   FrequencyRatio _local_system_freq_offset;
 
     /**
      * @brief fup info stores information of the last time
@@ -138,25 +145,31 @@ private:
 
     OSLock *timerq_lock;
 
-	/**
-	 * @brief  Add a new event to the timer queue
-	 * @param  target IEEE1588Port target
-	 * @param  e Event to be added
-	 * @param  time_ns Time in nanoseconds
-	 */
-	void addEventTimer
-		( IEEE1588Port * target, Event e, unsigned long long time_ns );
+   /**
+    * @brief  Add a new event to the timer queue
+    * @param  target IEEE1588Port target
+    * @param  e Event to be added
+    * @param  time_ns Time in nanoseconds
+    */
+   void addEventTimer
+      ( IEEE1588Port * target, Event e, unsigned long long time_ns );
 
-	/**
-	 * @brief  Deletes an event from the timer queue
-	 * @param  target Target port to remove the event from
-	 * @param  e Event to be removed
-	 * @return void
-	 */
-	void deleteEventTimer(IEEE1588Port * target, Event e);
+   /**
+    * @brief  Deletes an event from the timer queue
+    * @param  target Target port to remove the event from
+    * @param  e Event to be removed
+    * @return void
+    */
+   void deleteEventTimer(IEEE1588Port * target, Event e);
 public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
+   * @param externalPortConfiguration [in] If EXT_ENABLED, disables BMCA and configures port state externally (e.g. command-line)
+   * @param transmitAnnounce [in] If externalPortConfiguration is enabled, specifies whether to transmit announce as master
+   * @param forceAsCapable [in]
+   * @param negotiateSyncRate [in]
+   * @param automotiveState [in]
+   * @param automotiveTestMode [in]
    * @param forceOrdinarySlave Forces it to be an ordinary slave
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS Clause 10.3
@@ -166,9 +179,11 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	  (bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
-	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
-	   OS_IPC * ipc, OSLockFactory *lock_factory );
+     ( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+       bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
+       bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+       HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
+       OS_IPC * ipc, OSLockFactory *lock_factory );
 
   /*
    * Destroys the IEEE 1588 clock entity
@@ -215,7 +230,7 @@ public:
    * @return clock identity
    */
   ClockIdentity getLastEBestIdentity( void ) {
-	  return LastEBestIdentity;
+     return LastEBestIdentity;
   }
 
   /**
@@ -224,8 +239,8 @@ public:
    * @return void
    */
   void setLastEBestIdentity( ClockIdentity id ) {
-	  LastEBestIdentity = id;
-	  return;
+     LastEBestIdentity = id;
+     return;
   }
 
   /**
@@ -234,7 +249,7 @@ public:
    * @return void
    */
   void setClockIdentity(char *id) {
-	  clock_identity.set((uint8_t *) id);
+     clock_identity.set((uint8_t *) id);
   }
 
   /**
@@ -245,7 +260,7 @@ public:
    * @return void
    */
   void setClockIdentity(LinkLayerAddress * addr) {
-	  clock_identity.set(addr);
+     clock_identity.set(addr);
   }
 
   /**
@@ -253,7 +268,7 @@ public:
    * @return domain number
    */
   unsigned char getDomain(void) {
-	  return domain_number;
+     return domain_number;
   }
 
   /**
@@ -261,7 +276,7 @@ public:
    * @return GM clock ID
    */
   ClockIdentity getGrandmasterClockIdentity(void) {
-	  return grandmaster_clock_identity;
+     return grandmaster_clock_identity;
   }
 
   /**
@@ -270,10 +285,10 @@ public:
    * @return void
    */
   void setGrandmasterClockIdentity(ClockIdentity id) {
-	  if (id != grandmaster_clock_identity) {
-		  GPTP_LOG_STATUS("New Grandmaster \"%s\" (previous \"%s\")", id.getIdentityString().c_str(), grandmaster_clock_identity.getIdentityString().c_str());
-		  grandmaster_clock_identity = id;
-	  }
+     if (id != grandmaster_clock_identity) {
+        GPTP_LOG_STATUS("New Grandmaster \"%s\" (previous \"%s\")", id.getIdentityString().c_str(), grandmaster_clock_identity.getIdentityString().c_str());
+        grandmaster_clock_identity = id;
+     }
   }
 
   /**
@@ -281,7 +296,7 @@ public:
    * @return Clock quality
    */
   ClockQuality getGrandmasterClockQuality(void) {
-	  return grandmaster_clock_quality;
+     return grandmaster_clock_quality;
   }
 
   /**
@@ -290,7 +305,7 @@ public:
    * @return void
    */
   void setGrandmasterClockQuality( ClockQuality clock_quality ) {
-	  grandmaster_clock_quality = clock_quality;
+     grandmaster_clock_quality = clock_quality;
   }
 
   /**
@@ -298,7 +313,7 @@ public:
    * @return ClockQuality
    */
   ClockQuality getClockQuality(void) {
-	  return clock_quality;
+     return clock_quality;
   }
 
   /**
@@ -306,7 +321,7 @@ public:
    * @return Grandmaster priority1
    */
   unsigned char getGrandmasterPriority1(void) {
-	  return grandmaster_priority1;
+     return grandmaster_priority1;
   }
 
   /**
@@ -314,7 +329,7 @@ public:
    * @return Grandmaster priority2
    */
   unsigned char getGrandmasterPriority2(void) {
-	  return grandmaster_priority2;
+     return grandmaster_priority2;
   }
 
   /**
@@ -323,7 +338,7 @@ public:
    * @return void
    */
   void setGrandmasterPriority1( unsigned char priority1 ) {
-	  grandmaster_priority1 = priority1;
+     grandmaster_priority1 = priority1;
   }
 
   /**
@@ -332,7 +347,7 @@ public:
    * @return void
    */
   void setGrandmasterPriority2( unsigned char priority2 ) {
-	  grandmaster_priority2 = priority2;
+     grandmaster_priority2 = priority2;
   }
 
   /**
@@ -340,7 +355,7 @@ public:
    * @return steps removed value
    */
   uint16_t getMasterStepsRemoved(void) {
-	  return steps_removed;
+     return steps_removed;
   }
 
   /**
@@ -348,7 +363,7 @@ public:
    * @return currentUtcOffset
    */
   uint16_t getCurrentUtcOffset(void) {
-	  return current_utc_offset;
+     return current_utc_offset;
   }
 
   /**
@@ -356,7 +371,7 @@ public:
    * @return TimeSource
    */
   uint8_t getTimeSource(void) {
-	  return time_source;
+     return time_source;
   }
 
   /**
@@ -364,7 +379,7 @@ public:
    * @return Priority1 value
    */
   unsigned char getPriority1(void) {
-	  return priority1;
+     return priority1;
   }
 
   /**
@@ -372,7 +387,7 @@ public:
    * @return Priority2 value
    */
   unsigned char getPriority2(void) {
-	  return priority2;
+     return priority2;
   }
 
   /**
@@ -385,12 +400,61 @@ public:
   }
 
   /**
+  * @brief  Gets defaultDS.externalPortConfiguration
+  * @return defaultDS.externalPortConfiguration
+  */
+  ExtPortConfig getExternalPortConfiguration(void) {
+     return external_port_configuration;
+  }
+
+  /**
+  * @brief  Gets transmit_announce attribute
+  * @return transmit_announce attribute
+  */
+  bool getTransmitAnnounce(void) {
+     return transmit_announce;
+  }
+
+  /**
+  * @brief  Gets asCapable_true attribute
+  * @return asCapable_true attribute
+  */
+  bool getForceAsCapable(void) {
+     return force_asCapable;
+  }
+
+  /**
+  * @brief  Gets negotiate_sync_rate attribute
+  * @return negotiate_sync_rate attribute
+  */
+  bool getNegotiateSyncRate(void) {
+     return negotiate_sync_rate;
+  }
+
+  /**
+  * @brief  Gets automotive_state attribute
+  * @return automotive_state attribute
+  */
+  bool getAutomotiveState(void) {
+     return automotive_state;
+  }
+
+  /**
+  * @brief  Gets automotive_test_mode attribute
+  * @return automotive_test_mode attribute
+  */
+  bool getAutomotiveTestMode(void) {
+     return automotiveTestMode;
+  }
+
+
+  /**
    * @brief  Gets nextPortId value
    * @return The remaining value from the division of current number of ports by
    * (maximum number of ports + 1) + 1
    */
   uint16_t getNextPortId(void) {
-	  return (number_ports++ % (MAX_PORTS + 1)) + 1;
+     return (number_ports++ % (MAX_PORTS + 1)) + 1;
   }
 
   /**
@@ -454,10 +518,10 @@ public:
    * @return void
    */
   void registerPort(IEEE1588Port * port, uint16_t index) {
-	  if (index < MAX_PORTS) {
-		  port_list[index - 1] = port;
-	  }
-	  ++number_ports;
+     if (index < MAX_PORTS) {
+        port_list[index - 1] = port;
+     }
+     ++number_ports;
   }
 
   /**
@@ -467,9 +531,9 @@ public:
    * @return
    */
   void getPortList(int &count, IEEE1588Port ** &ports) {
-	  ports = this->port_list;
-	  count = number_ports;
-	  return;
+     ports = this->port_list;
+     count = number_ports;
+     return;
   }
 
   /**
@@ -486,7 +550,7 @@ public:
    * @return void
    */
   void addEventTimerLocked
-	  ( IEEE1588Port * target, Event e, unsigned long long time_ns );
+     ( IEEE1588Port * target, Event e, unsigned long long time_ns );
 
   /**
    * @brief  Deletes and event from the timer queue using a lock
@@ -503,7 +567,7 @@ public:
    * @return The offset in ppt (parts per trillion)
    */
   FrequencyRatio calcMasterLocalClockRateDifference
-	  ( Timestamp master_time, Timestamp sync_time );
+     ( Timestamp master_time, Timestamp sync_time );
 
   /**
    * @brief  Calculates the local to system clock rate difference
@@ -512,7 +576,7 @@ public:
    * @return The offset in ppt (parts per trillion)
    */
   FrequencyRatio calcLocalSystemClockRateDifference
-	  ( Timestamp local_time, Timestamp system_time );
+     ( Timestamp local_time, Timestamp system_time );
 
   /**
    * @brief  Sets the master offset, sintonyze and adjusts the frequency offset
@@ -528,12 +592,12 @@ public:
    * @param  asCapable asCapable flag
    */
   void setMasterOffset
-	  ( IEEE1588Port * port, int64_t master_local_offset, Timestamp local_time,
-		FrequencyRatio master_local_freq_offset,
-		int64_t local_system_offset,
-		Timestamp system_time,
-		FrequencyRatio local_system_freq_offset,
-		unsigned sync_count,
+     ( IEEE1588Port * port, int64_t master_local_offset, Timestamp local_time,
+      FrequencyRatio master_local_freq_offset,
+      int64_t local_system_offset,
+      Timestamp system_time,
+      FrequencyRatio local_system_freq_offset,
+      unsigned sync_count,
         unsigned pdelay_count,
         PortState port_state,
         bool asCapable );
@@ -543,7 +607,7 @@ public:
    * @return clock identity
    */
   ClockIdentity getClockIdentity() {
-	  return clock_identity;
+     return clock_identity;
   }
 
   /**
@@ -551,7 +615,7 @@ public:
    * @return void
    */
   void newSyntonizationSetPoint() {
-	  _new_syntonization_set_point = true;
+     _new_syntonization_set_point = true;
   }
 
   /**
@@ -559,15 +623,15 @@ public:
    * @return void
    */
   void restartPDelayAll() {
-	  int number_ports, i, j = 0;
-	  IEEE1588Port **ports;
+     int number_ports, i, j = 0;
+     IEEE1588Port **ports;
 
-	  getPortList( number_ports, ports );
+     getPortList( number_ports, ports );
 
-	  for( i = 0; i < number_ports; ++i ) {
-		  while( ports[j] == NULL ) ++j;
-		  ports[j]->restartPDelay();
-	  }
+     for( i = 0; i < number_ports; ++i ) {
+        while( ports[j] == NULL ) ++j;
+        ports[j]->restartPDelay();
+     }
   }
 
   /**
@@ -575,19 +639,19 @@ public:
    * @return void
    */
   int getTxLockAll() {
-	  int number_ports, i, j = 0;
-	  IEEE1588Port **ports;
+     int number_ports, i, j = 0;
+     IEEE1588Port **ports;
 
-	  getPortList( number_ports, ports );
+     getPortList( number_ports, ports );
 
-	  for( i = 0; i < number_ports; ++i ) {
-		  while( ports[j] == NULL ) ++j;
-		  if( ports[j]->getTxLock() == false ) {
-			  return false;
-		  }
-	  }
+     for( i = 0; i < number_ports; ++i ) {
+        while( ports[j] == NULL ) ++j;
+        if( ports[j]->getTxLock() == false ) {
+           return false;
+        }
+     }
 
-	  return true;
+     return true;
   }
 
   /**
@@ -595,21 +659,20 @@ public:
    * @return void
    */
   int putTxLockAll() {
-	  int number_ports, i, j = 0;
-	  IEEE1588Port **ports;
+     int number_ports, i, j = 0;
+     IEEE1588Port **ports;
 
-	  getPortList( number_ports, ports );
+     getPortList( number_ports, ports );
 
-	  for( i = 0; i < number_ports; ++i ) {
-		  while( ports[j] == NULL ) ++j;
-		  if( ports[j]->putTxLock() == false ) {
-			  return false;
-		  }
-	  }
+     for( i = 0; i < number_ports; ++i ) {
+        while( ports[j] == NULL ) ++j;
+        if( ports[j]->putTxLock() == false ) {
+           return false;
+        }
+     }
 
-	  return true;
+     return true;
   }
-
 
   /**
    * @brief  Declares a friend instance of tick_handler method
@@ -623,7 +686,7 @@ public:
    * @return OSLockResult structure
    */
   OSLockResult getTimerQLock() {
-	  return timerq_lock->lock();
+     return timerq_lock->lock();
   }
 
   /**
@@ -631,7 +694,7 @@ public:
    * @return OSLockResult structure
    */
   OSLockResult putTimerQLock() {
-	  return timerq_lock->unlock();
+     return timerq_lock->unlock();
   }
 
   /**
@@ -639,7 +702,7 @@ public:
    * @return OSLock instance
    */
   OSLock *timerQLock() {
-	  return timerq_lock;
+     return timerq_lock;
   }
 };
 
