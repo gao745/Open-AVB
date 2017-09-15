@@ -298,8 +298,6 @@ void IEEE1588Port::startAnnounce() {
 
 void IEEE1588Port::syncDone()
 {
-   GPTP_LOG_VERBOSE("Sync complete");
-
    if (clock->getExternalPortConfiguration() == EXT_SLAVE
       && clock->getAutomotiveState()) {
       if (avbSyncState > 0) {
@@ -1246,14 +1244,12 @@ void IEEE1588Port::processEvent(Event e)
 
          if (clock->getExternalPortConfiguration() == EXT_GM
              || clock->getNegotiateSyncRate() == false) {
-            GPTP_LOG_DEBUG("do not send signal message");
             sendSignalMessage = false;
          }
 
 			if (sendSignalMessage) {
 				// Send operational signalling message
 					PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
-            GPTP_LOG_DEBUG("send signal message");
 					if (sigMsg) {
                if (clock->getExternalPortConfiguration() == EXT_SLAVE)
 							sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);

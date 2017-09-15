@@ -84,11 +84,11 @@ void print_usage( char *arg0 ) {
 		  "\t-T force master\n"
 		  "\t-L force slave\n"
 		  "\t-V enable AVnu Automotive Profile\n"
-		  "\t-E enable test mode (as defined in AVnu automotive profile)\n"
-		  "\t-CT set asCapable always true (valid when AVnu Automotive Profile is enabled)\n"
-		  "\t-ES enable automotive states (valid when AVnu Automotive Profile is enabled)\n"
-		  "\t-ER enable sync rate negotiation (valid when AVnu Automotive Profile is enabled)\n"
-		  "\t-DT disable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DE disable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-DC do not force asCapable always true (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DS disable automotive states (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DR disable sync rate negotiation (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-ET enable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-INITSYNC <value> initial sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-OPERSYNC <value> operational sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-INITPDELAY <value> initial pdelay interval (Log base 2. 0 = 1 second)\n"
@@ -159,13 +159,13 @@ int main(int argc, char **argv)
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
 
-	bool automotive_profile = false;
+	bool automotiveProfile = false;
 	ExtPortConfig extPortConfig = EXT_DISABLED;
-	bool transmitAnnounce = true;
-	bool forceAsCapable = false;
-	bool negotiateSyncRate = false;
-	bool automotiveState = false;
-	bool automotiveTestMode = false;
+	bool transmitAnnounce = false;
+	bool forceAsCapable = true;
+	bool negotiateSyncRate = true;
+	bool automotiveState = true;
+	bool automotiveTestMode = true;
 
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
@@ -269,22 +269,22 @@ int main(int argc, char **argv)
 				}
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
-				automotive_profile = true;
+				automotiveProfile = true;
 			}
-			else if (strcmp(argv[i] + 1, "E") == 0) {
-				automotiveTestMode = true;
+			else if (strcmp(argv[i] + 1, "DE") == 0) {
+				automotiveTestMode = false;
 			}
-			else if (strcmp(argv[i] + 1, "CT") == 0) {
-				forceAsCapable = true;
+			else if (strcmp(argv[i] + 1, "DC") == 0) {
+				forceAsCapable = false;
 			}
-			else if (strcmp(argv[i] + 1, "ES") == 0) {
-				automotiveState = true;
+			else if (strcmp(argv[i] + 1, "DS") == 0) {
+				automotiveState = false;
 			}
-			else if (strcmp(argv[i] + 1, "ER") == 0) {
-				negotiateSyncRate = true;
+			else if (strcmp(argv[i] + 1, "DR") == 0) {
+				negotiateSyncRate = false;
 			}
-			else if (strcmp(argv[i] + 1, "DT") == 0) {
-				transmitAnnounce = false;
+			else if (strcmp(argv[i] + 1, "ET") == 0) {
+				transmitAnnounce = true;
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
 				portInit.initialLogSyncInterval = atoi(argv[++i]);
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (automotive_profile)
+	if (automotiveProfile)
 	{
 		if (port_state == PTP_MASTER)
 		{
