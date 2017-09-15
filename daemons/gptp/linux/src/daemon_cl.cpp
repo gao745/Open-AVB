@@ -444,7 +444,7 @@ int main(int argc, char **argv)
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
 
-	if (automotive_profile) {
+	if (automotiveProfile) {
 		override_portstate = true;
 	}
 
