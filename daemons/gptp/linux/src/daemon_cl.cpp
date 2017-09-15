@@ -81,11 +81,14 @@ void print_usage( char *arg0 ) {
 		  "\t-G <group> group id for shared memory\n"
 		  "\t-R <priority 1> priority 1 value\n"
 		  "\t-D Phy Delay <gb_tx_delay,gb_rx_delay,mb_tx_delay,mb_rx_delay>\n"
-		  "\t-T force master (ignored when Automotive Profile set)\n"
-		  "\t-L force slave (ignored when Automotive Profile set)\n"
-		  "\t-E enable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-T force master\n"
+		  "\t-L force slave\n"
 		  "\t-V enable AVnu Automotive Profile\n"
-		  "\t-GM set grandmaster for Automotive Profile\n"
+		  "\t-E enable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-CT set asCapable always true (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-ES enable automotive states (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-ER enable sync rate negotiation (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DT disable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-INITSYNC <value> initial sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-OPERSYNC <value> operational sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-INITPDELAY <value> initial pdelay interval (Log base 2. 0 = 1 second)\n"
@@ -147,9 +150,6 @@ int main(int argc, char **argv)
 	portInit.timestamper = NULL;
 	portInit.offset = 0;
 	portInit.net_label = NULL;
-	portInit.automotive_profile = false;
-	portInit.isGM = false;
-	portInit.testMode = false;
 	portInit.initialLogSyncInterval = LOG2_INTERVAL_INVALID;
 	portInit.initialLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
 	portInit.operLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
@@ -158,6 +158,14 @@ int main(int argc, char **argv)
 	portInit.thread_factory = NULL;
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
+
+	bool automotive_profile = false;
+	ExtPortConfig extPortConfig = EXT_DISABLED;
+	bool transmitAnnounce = true;
+	bool forceAsCapable = false;
+	bool negotiateSyncRate = false;
+	bool automotiveState = false;
+	bool automotiveTestMode = false;
 
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
@@ -261,13 +269,22 @@ int main(int argc, char **argv)
 				}
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
-				portInit.automotive_profile = true;
-			}
-			else if (strcmp(argv[i] + 1, "GM") == 0) {
-				portInit.isGM = true;
+				automotive_profile = true;
 			}
 			else if (strcmp(argv[i] + 1, "E") == 0) {
-				portInit.testMode = true;
+				automotiveTestMode = true;
+			}
+			else if (strcmp(argv[i] + 1, "CT") == 0) {
+				forceAsCapable = true;
+			}
+			else if (strcmp(argv[i] + 1, "ES") == 0) {
+				automotiveState = true;
+			}
+			else if (strcmp(argv[i] + 1, "ER") == 0) {
+				negotiateSyncRate = true;
+			}
+			else if (strcmp(argv[i] + 1, "DT") == 0) {
+				transmitAnnounce = false;
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
 				portInit.initialLogSyncInterval = atoi(argv[++i]);
@@ -290,6 +307,18 @@ int main(int argc, char **argv)
 					fprintf(stderr, "config file must be specified.\n");
 				}
 			}
+		}
+	}
+
+	if (automotive_profile)
+	{
+		if (port_state == PTP_MASTER)
+		{
+			extPortConfig = EXT_GM;
+		}
+		else
+		{
+			extPortConfig = EXT_SLAVE;
 		}
 	}
 
@@ -333,7 +362,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	pClock = new IEEE1588Clock( false, syntonize, priority1, timestamper,
+	pClock = new IEEE1588Clock( extPortConfig, transmitAnnounce,
+		                        forceAsCapable, negotiateSyncRate, automotiveState, automotiveTestMode,
+		                        false, syntonize, priority1, timestamper,
 								timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
@@ -413,13 +444,7 @@ int main(int argc, char **argv)
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
 
-	if (portInit.automotive_profile) {
-		if (portInit.isGM) {
-			port_state = PTP_MASTER;
-		}
-		else {
-			port_state = PTP_SLAVE;
-		}
+	if (automotive_profile) {
 		override_portstate = true;
 	}
 
