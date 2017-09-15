@@ -1242,21 +1242,21 @@ void IEEE1588Port::processEvent(Event e)
 				sendSignalMessage = true;
 			}
 
-         if (clock->getExternalPortConfiguration() == EXT_GM
-             || clock->getNegotiateSyncRate() == false) {
-            sendSignalMessage = false;
-         }
+         	if (clock->getExternalPortConfiguration() == EXT_GM
+                || clock->getNegotiateSyncRate() == false) {
+            	sendSignalMessage = false;
+         	}
 
 			if (sendSignalMessage) {
 				// Send operational signalling message
 					PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
 					if (sigMsg) {
-               if (clock->getExternalPortConfiguration() == EXT_SLAVE)
-							sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
-						else 
-							sigMsg->setintervals(log_min_mean_pdelay_req_interval, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
-						sigMsg->sendPort(this, NULL);
-						delete sigMsg;
+	               		if (clock->getExternalPortConfiguration() == EXT_SLAVE)
+								sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
+							else 
+								sigMsg->setintervals(log_min_mean_pdelay_req_interval, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
+							sigMsg->sendPort(this, NULL);
+							delete sigMsg;
 					}
 
 					startSyncReceiptTimer((unsigned long long)
