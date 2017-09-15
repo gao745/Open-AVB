@@ -581,12 +581,6 @@ class IEEE1588Port {
 	bool getAsCapableEvaluated() { return( asCapableEvaluated ); }
 
 	/**
-	 * @brief  Gets the AVnu automotive profile flag
-	 * @return automotive_profile flag
-	 */
-   //bool getAutomotiveProfile() { return( automotive_profile ); }
-
-	/**
 	 * @brief Destroys a IEEE1588Port
 	 */
 	~IEEE1588Port();
@@ -690,11 +684,11 @@ class IEEE1588Port {
 	 */
 	PTPMessageAnnounce *calculateERBest(void);
 
-   /**
-   * @brief  Process received announce when externalPortConfiguration enabled
-   * @return void
-   */
-   void processAnnounceExt(void);
+    /**
+     * @brief  Process received announce when externalPortConfiguration enabled
+     * @return void
+     */
+    void processAnnounceExt(void);
 
 	/**
 	 * @brief  Adds a foreign master.

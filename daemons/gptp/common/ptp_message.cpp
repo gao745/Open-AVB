@@ -813,11 +813,11 @@ void PTPMessageAnnounce::processMessage(IEEE1588Port * port)
 
    // When externalPortConfiguration is disabled,
    // the BMCA is used
-   if (port->getClock()->getExternalPortConfiguration() == EXT_DISABLED) {
-	port->getClock()->addEventTimerLocked(port, STATE_CHANGE_EVENT, 16000000);
-   } else {
-      port->processAnnounceExt();
-   }
+   	if (port->getClock()->getExternalPortConfiguration() == EXT_DISABLED) {
+		port->getClock()->addEventTimerLocked(port, STATE_CHANGE_EVENT, 16000000);
+   	} else {
+      	port->processAnnounceExt();
+   	}
  bail:
 	port->getClock()->addEventTimerLocked
 		(port, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES,
@@ -1655,13 +1655,13 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 		}
 	}
 	if( !port->setLinkDelay( link_delay ) ) {
-      if (!port->getClock()->getForceAsCapable()
-         && (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
+      	if (!port->getClock()->getForceAsCapable()
+         	&& (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
 			GPTP_LOG_STATUS("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
 			port->setAsCapable( false );
 		}
 	} else {
-      if (!port->getClock()->getForceAsCapable() && !port->getAsCapable() ) {
+      	if (!port->getClock()->getForceAsCapable() && !port->getAsCapable() ) {
 			GPTP_LOG_STATUS("Link delay %ld within neighborPropDelayThresh; setting AsCapable", link_delay);
 			port->setAsCapable( true );
 		}
@@ -1843,7 +1843,7 @@ void PTPMessageSignalling::processMessage(IEEE1588Port * port)
 		port->startSyncIntervalTimer(waitTime);
 	}
 
-   if (port->getClock()->getExternalPortConfiguration() == EXT_DISABLED) {
+   	if (port->getClock()->getExternalPortConfiguration() == EXT_DISABLED) {
 		if (announceInterval == PTPMessageSignalling::sigMsgInterval_Initial) {
 			// TODO: Needs implementation
 			GPTP_LOG_WARNING("Signal received to set Announce message to initial interval: Not implemented");

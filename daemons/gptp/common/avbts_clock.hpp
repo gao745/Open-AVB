@@ -92,12 +92,12 @@ private:
 	bool grandmaster_is_boundary_clock;
 	uint8_t time_source;
 
-   ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
-   bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
-   bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
-   bool negotiate_sync_rate; // Enable sync rate negotiation? todo: ture or false when external_port_configuration is enabled
-   bool automotive_state;
-   bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
+  ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
+  bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
+  bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
+  bool negotiate_sync_rate; // Enable sync rate negotiation? todo: ture or false when external_port_configuration is enabled
+  bool automotive_state;
+  bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
 
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
@@ -179,7 +179,7 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	 ( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+	  (ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
 	   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
 	   bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
 	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
