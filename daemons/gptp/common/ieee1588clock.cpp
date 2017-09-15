@@ -78,7 +78,9 @@ void ClockIdentity::set(LinkLayerAddress * addr)
 }
 
 IEEE1588Clock::IEEE1588Clock
-( bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+  bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
+  bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
   HWTimestamper *timestamper, OSTimerQueueFactory *timerq_factory,
   OS_IPC *ipc, OSLockFactory *lock_factory )
 {
@@ -88,6 +90,21 @@ IEEE1588Clock::IEEE1588Clock
 	number_ports = 0;
 
 	this->forceOrdinarySlave = forceOrdinarySlave;
+
+    if (externalPortConfiguration == EXT_DISABLED) {
+        transmitAnnounce = true;
+        forceAsCapable = false;
+        negotiateSyncRate = false;
+        automotiveState = false;
+        automotiveTestMode = false;
+    }
+
+    this->external_port_configuration = externalPortConfiguration;
+    this->transmit_announce = transmitAnnounce;
+    this->force_asCapable = forceAsCapable;
+    this->negotiate_sync_rate = negotiateSyncRate;
+    this->automotive_state = automotiveState;
+    this->automotive_test_mode = automotiveTestMode;
 
     /*TODO: Make the values below configurable*/
 	clock_quality.clockAccuracy = 0x22;

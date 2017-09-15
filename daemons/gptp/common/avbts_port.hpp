@@ -228,15 +228,6 @@ typedef struct {
 	/* net_label Network label */
 	InterfaceLabel * net_label;
 
-	/* automotive_profile set the AVnu automotive profile */
-	bool automotive_profile;
-
-	/* Set to true if the port is the grandmaster. Used for fixed GM in the the AVnu automotive profile */
-	bool isGM;
-
-	/* Set to true if the port is the grandmaster. Used for fixed GM in the the AVnu automotive profile */
-	bool testMode;
-
 	/* gPTP 10.2.4.4 */
 	char initialLogSyncInterval;
 
@@ -529,37 +520,7 @@ class IEEE1588Port {
 	 * @brief  Starts pDelay event timer if not yet started.
 	 * @return void
 	 */
-	void syncDone() {
-		GPTP_LOG_VERBOSE("Sync complete");
-
-		if (automotive_profile && port_state == PTP_SLAVE) {
-			if (avbSyncState > 0) {
-				avbSyncState--;
-				if (avbSyncState == 0) {
-					setStationState(STATION_STATE_AVB_SYNC);
-					if (testMode) {
-						APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-						if (testStatusMsg) {
-							testStatusMsg->sendPort(this);
-							delete testStatusMsg;
-						}
-					}
-				}
-			}
-		}
-
-		if (automotive_profile) {
-			if (!sync_rate_interval_timer_started) {
-				if (log_mean_sync_interval != operLogSyncInterval) {
-					startSyncRateIntervalTimer();
-				}
-			}
-		}
-
-		if( !pdelay_started ) {
-			startPDelay();
-		}
-	}
+   void syncDone();
 
 	/**
 	 * @brief  Gets a pointer to timer_factory object
@@ -623,7 +584,7 @@ class IEEE1588Port {
 	 * @brief  Gets the AVnu automotive profile flag
 	 * @return automotive_profile flag
 	 */
-	bool getAutomotiveProfile() { return( automotive_profile ); }
+   //bool getAutomotiveProfile() { return( automotive_profile ); }
 
 	/**
 	 * @brief Destroys a IEEE1588Port
@@ -728,6 +689,12 @@ class IEEE1588Port {
 	 * @return Pointer to PTPMessageAnnounce
 	 */
 	PTPMessageAnnounce *calculateERBest(void);
+
+   /**
+   * @brief  Process received announce when externalPortConfiguration enabled
+   * @return void
+   */
+   void processAnnounceExt(void);
 
 	/**
 	 * @brief  Adds a foreign master.

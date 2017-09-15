@@ -92,6 +92,13 @@ private:
 	bool grandmaster_is_boundary_clock;
 	uint8_t time_source;
 
+   ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
+   bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
+   bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
+   bool negotiate_sync_rate; // Enable sync rate negotiation? todo: ture or false when external_port_configuration is enabled
+   bool automotive_state;
+   bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
+
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
 	bool _new_syntonization_set_point;
@@ -157,6 +164,12 @@ private:
 public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
+   * @param externalPortConfiguration [in] If EXT_ENABLED, disables BMCA and configures port state externally (e.g. command-line)
+   * @param transmitAnnounce [in] If externalPortConfiguration is enabled, specifies whether to transmit announce as master
+   * @param forceAsCapable [in]
+   * @param negotiateSyncRate [in]
+   * @param automotiveState [in]
+   * @param automotiveTestMode [in]
    * @param forceOrdinarySlave Forces it to be an ordinary slave
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS Clause 10.3
@@ -166,7 +179,9 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	  (bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+	 ( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+	   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
+	   bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
 	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
 	   OS_IPC * ipc, OSLockFactory *lock_factory );
 
@@ -383,6 +398,55 @@ public:
       /*TODO: add range check */
       priority2 = newPriority2;
   }
+
+  /**
+  * @brief  Gets defaultDS.externalPortConfiguration
+  * @return defaultDS.externalPortConfiguration
+  */
+  ExtPortConfig getExternalPortConfiguration(void) {
+	 return external_port_configuration;
+  }
+
+  /**
+  * @brief  Gets transmit_announce attribute
+  * @return transmit_announce attribute
+  */
+  bool getTransmitAnnounce(void) {
+	 return transmit_announce;
+  }
+
+  /**
+  * @brief  Gets asCapable_true attribute
+  * @return asCapable_true attribute
+  */
+  bool getForceAsCapable(void) {
+	 return force_asCapable;
+  }
+
+  /**
+  * @brief  Gets negotiate_sync_rate attribute
+  * @return negotiate_sync_rate attribute
+  */
+  bool getNegotiateSyncRate(void) {
+	 return negotiate_sync_rate;
+  }
+
+  /**
+  * @brief  Gets automotive_state attribute
+  * @return automotive_state attribute
+  */
+  bool getAutomotiveState(void) {
+	 return automotive_state;
+  }
+
+  /**
+  * @brief  Gets automotive_test_mode attribute
+  * @return automotive_test_mode attribute
+  */
+  bool getAutomotiveTestMode(void) {
+	 return automotiveTestMode;
+  }
+
 
   /**
    * @brief  Gets nextPortId value
@@ -609,7 +673,6 @@ public:
 
 	  return true;
   }
-
 
   /**
    * @brief  Declares a friend instance of tick_handler method
