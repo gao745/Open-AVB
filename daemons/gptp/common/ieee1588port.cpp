@@ -613,12 +613,12 @@ void IEEE1588Port::processEvent(Event e)
 
      	if (clock->getAutomotiveState()) {
 			setStationState(STATION_STATE_ETHERNET_READY);
+      }
          	if (clock->getAutomotiveTestMode()) {
 				APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
 				if (testStatusMsg) {
 					testStatusMsg->sendPort(this);
 					delete testStatusMsg;
-				}
 			}
       	}
 
@@ -906,6 +906,7 @@ void IEEE1588Port::processEvent(Event e)
 					}
 					startAnnounce();
 				}
+
 			}
 			else {
 				// Automotive Profile
@@ -1492,6 +1493,11 @@ void IEEE1588Port::addSockAddrMap
 	return;
 }
 
+bool IEEE1588Port::getTestMode()
+{
+   return clock->getAutomotiveTestMode();
+}
+
 int IEEE1588Port::getTxTimestamp
 (PTPMessageCommon * msg, Timestamp & timestamp, unsigned &counter_value,
  bool last)
@@ -1535,6 +1541,18 @@ int IEEE1588Port::getRxTimestamp(PortIdentity * sourcePortIdentity,
 	}
 	timestamp = clock->getSystemTime();
 	return 0;
+}
+
+bool IEEE1588Port::setLinkDelay(int64_t delay)
+{
+   one_way_delay = delay;
+   int64_t abs_delay = (one_way_delay < 0 ? -one_way_delay : one_way_delay);
+
+   if ( clock->getAutomotiveTestMode() ) {
+      GPTP_LOG_STATUS("Link delay: %d", delay);
+   }
+
+   return (abs_delay <= neighbor_prop_delay_thresh);
 }
 
 void IEEE1588Port::startSyncReceiptTimer(long long unsigned int waitTime) {

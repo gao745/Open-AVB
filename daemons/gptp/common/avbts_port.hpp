@@ -332,11 +332,6 @@ class IEEE1588Port {
 
 	bool asCapable;
 	bool asCapableEvaluated;
-
-	/* Automotive Profile : Static variables */
-	// port_state : already defined as port_state
-	bool isGM;
-	bool testMode;
 	// asCapable : already defined as asCapable
 	char initialLogPdelayReqInterval;
 	char initialLogSyncInterval;
@@ -1217,16 +1212,7 @@ class IEEE1588Port {
 	 * @return True if one_way_delay is lower or equal than neighbor propagation delay threshold
 	 *         False otherwise
 	 */
-	bool setLinkDelay(int64_t delay) {
-		one_way_delay = delay;
-		int64_t abs_delay = (one_way_delay < 0 ? -one_way_delay : one_way_delay);
-
-		if (testMode) {
-			GPTP_LOG_STATUS("Link delay: %d", delay);
-		}
-
-		return (abs_delay <= neighbor_prop_delay_thresh);
-	}
+   bool setLinkDelay(int64_t delay);
 
 	/**
 	 * @brief  Sets the internal variabl sync_receipt_thresh, which is the
@@ -1496,9 +1482,7 @@ class IEEE1588Port {
 	 * @brief  Gets the testMode
 	 * @return bool of the test mode value
 	 */
-	bool getTestMode(void) {
-		return testMode;
-	}
+   bool getTestMode(void);
 
 	/**
 	 * @brief  Increment IEEE Port counter:
