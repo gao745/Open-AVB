@@ -912,7 +912,6 @@ void IEEE1588Port::processEvent(Event e)
 				// Automotive Profile
             	if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES
                 	&& clock->getNegotiateSyncRate()) {
-               		GPTP_LOG_EXCEPTION("automotive SYNC receipt timeout");
 					GPTP_LOG_EXCEPTION("SYNC receipt timeout");
 
 					startSyncReceiptTimer((unsigned long long)
