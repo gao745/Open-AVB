@@ -294,15 +294,30 @@ void *LinuxTimerQueueHandler( void *arg ) {
 	sigemptyset( &waitfor );
 
 	while( !timerq->stop ) {
-		siginfo_t info;
+		siginfo_t info = { 0 };
 		LinuxTimerQueueMap_t::iterator iter;
 		sigaddset( &waitfor, SIGUSR1 );
 		if( sigtimedwait( &waitfor, &info, &timeout ) == -1 ) {
-			if( errno == EAGAIN ) continue;
-			else break;
+			if( errno == EAGAIN ) {
+				continue;
+			}
+			else {
+				GPTP_LOG_ERROR( "LinuxTimerQueueHandler: sigtimedwait() errno: %s(%d).",
+					strerror( errno ), errno );
+				if( errno == EINTR ) {
+					continue;
+				} 
+				else {
+					raise( SIGTERM );
+				}
+			}
 		}
-		if( timerq->lock->lock() != oslock_ok ) {
-			break;
+
+		int lockStatus = 0;
+		if( (lockStatus = timerq->lock->lock()) != oslock_ok ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->lock(): error %d",
+				 lockStatus );
+			raise( SIGTERM );
 		}
 
 		iter = timerq->timerQueueMap.find(info.si_value.sival_int);
@@ -316,8 +331,12 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			timer_delete(arg->timer_handle);
 			delete arg;
 		}
-		if( timerq->lock->unlock() != oslock_ok ) {
-			break;
+
+		lockStatus = 0;
+		if( (lockStatus = timerq->lock->unlock()) != oslock_ok ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->unlock(): error %d",
+				 lockStatus );
+			raise( SIGTERM );
 		}
 	}
 
