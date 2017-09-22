@@ -304,10 +304,16 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			else {
 				GPTP_LOG_ERROR( "LinuxTimerQueueHandler: sigtimedwait() errno: %s(%d).",
 					strerror( errno ), errno );
+				// During testing that stresses the CPU/network, we found that 
+				// sigtimedwait sometimes returns EINTR in this code. This might be
+				// due to a timer expiring and sending a signal while another
+				// timer signal is still being processed. Logging the error and retrying
+				// was successful in testing.
 				if( errno == EINTR ) {
 					continue;
 				} 
 				else {
+					// Ensure the daemon exits on fatal error
 					raise( SIGTERM );
 				}
 			}
@@ -317,6 +323,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 		if( (lockStatus = timerq->lock->lock()) != oslock_ok ) {
 			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->lock(): error %d",
 				 lockStatus );
+			// Ensure the daemon exits on fatal error
 			raise( SIGTERM );
 		}
 
@@ -336,6 +343,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 		if( (lockStatus = timerq->lock->unlock()) != oslock_ok ) {
 			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->unlock(): error %d",
 				 lockStatus );
+			// Ensure the daemon exits on fatal error
 			raise( SIGTERM );
 		}
 	}
