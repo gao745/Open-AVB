@@ -156,7 +156,6 @@ int main(int argc, char **argv)
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
 
-	bool automotiveProfile = false;
 	ExtPortConfig extPortConfig = EXT_DISABLED;
 	bool transmitAnnounce = false;
 	bool forceAsCapable = true;
