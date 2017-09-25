@@ -433,26 +433,15 @@ void *LinuxTimerQueueHandler( void *arg ) {
 		siginfo_t info = { 0 };
 		LinuxTimerQueueMap_t::iterator iter;
 		sigaddset( &waitfor, SIGUSR1 );
-		if( sigtimedwait( &waitfor, &info, &timeout ) == -1 ) {
-			if( errno == EAGAIN ) {
-				continue;
-			}
-			else {
-				GPTP_LOG_ERROR( "LinuxTimerQueueHandler: sigtimedwait() errno: %s(%d).",
-					strerror( errno ), errno );
-				// During testing that stresses the CPU/network, we found that 
-				// sigtimedwait sometimes returns EINTR in this code. This might be
-				// due to a timer expiring and sending a signal while another
-				// timer signal is still being processed. Logging the error and retrying
-				// was successful in testing.
-				if( errno == EINTR ) {
-					continue;
-				} 
-				else {
-					// Ensure the daemon exits on fatal error
-					raise( SIGTERM );
-				}
-			}
+		int result = 0;
+		do {
+			result = sigtimedwait( &waitfor, &info, &timeout );
+		} while( result == -1 && ( errno == EAGAIN || errno == EINTR ) );
+
+		if( result == -1 ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: sigtimedwait() errno: %s(%d).",
+				strerror( errno ), errno );
+			_exit(EXIT_FAILURE);
 		}
 
 		int lockStatus = 0;
@@ -460,7 +449,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->lock(): error %d",
 				 lockStatus );
 			// Ensure the daemon exits on fatal error
-			raise( SIGTERM );
+			_exit(EXIT_FAILURE);
 		}
 
 		iter = timerq->timerQueueMap.find(info.si_value.sival_int);
@@ -480,7 +469,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->unlock(): error %d",
 				 lockStatus );
 			// Ensure the daemon exits on fatal error
-			raise( SIGTERM );
+			_exit(EXIT_FAILURE);
 		}
 	}
 
