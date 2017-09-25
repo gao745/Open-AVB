@@ -257,7 +257,6 @@ int main(int argc, char **argv)
 				}
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
-				automotiveProfile = true;
 				if (i + 1 < argc) {
 					if (strcmp(argv[i + 1], "gm") == 0) {
 						extPortConfig = EXT_GM;
