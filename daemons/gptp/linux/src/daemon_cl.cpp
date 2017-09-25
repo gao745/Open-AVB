@@ -111,7 +111,6 @@ int main(int argc, char **argv)
 	int i;
 	bool pps = false;
 	uint8_t priority1 = 248;
-	bool override_portstate = false;
 
 	char *restoredata = NULL;
 	char *restoredataptr = NULL;
@@ -266,11 +265,11 @@ int main(int argc, char **argv)
 					} else if (strcmp(argv[i + 1], "slave == 0")) {
 						extPortConfig = EXT_SLAVE;
 					} else {
-						printf("set external port configuration to be \"gm\" or \"slave\"\n.");
+						printf("set external port configuration to be \"gm\" or \"slave\"\n");
 					}
 				} else {
-					printf("external port configuration needs to be specified to either \"gm\"
-						   or \"slave\"\n");
+					printf("external port configuration needs to be specified"
+						    "to either \"gm\" or \"slave\"\n");
 				}
 			}
 			else if (strcmp(argv[i] + 1, "ETE") == 0) {
