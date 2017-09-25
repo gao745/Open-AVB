@@ -92,12 +92,12 @@ private:
 	bool grandmaster_is_boundary_clock;
 	uint8_t time_source;
 
-  ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
-  bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
-  bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
-  bool negotiate_sync_rate; // Enable sync rate negotiation? todo: ture or false when external_port_configuration is enabled
-  bool automotive_state;
-  bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
+	ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
+	bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
+	bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
+	bool negotiate_sync_rate; // Enable sync rate negotiation? This is valid when external_port_configuration is enabled
+	bool automotive_state; // Enable automotive states? This can be true only when external_port_configuration is enabled.
+	bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
 
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
@@ -124,7 +124,6 @@ private:
 
 	OSTimerQueue *timerq;
 
-	bool forceOrdinarySlave;
 	FrequencyRatio _master_local_freq_offset;
 	FrequencyRatio _local_system_freq_offset;
 
@@ -165,12 +164,11 @@ public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
    * @param externalPortConfiguration [in] If EXT_ENABLED, disables BMCA and configures port state externally (e.g. command-line)
-   * @param transmitAnnounce [in] If externalPortConfiguration is enabled, specifies whether to transmit announce as master
-   * @param forceAsCapable [in]
-   * @param negotiateSyncRate [in]
-   * @param automotiveState [in]
-   * @param automotiveTestMode [in]
-   * @param forceOrdinarySlave Forces it to be an ordinary slave
+   * @param transmitAnnounce [in] If externalPortConfiguration is enabled, specifies whether to transmit announce messages
+   * @param forceAsCapable [in] If externalPortConfiguration is enabled, specifies whether to set asCapable always be true 
+   * @param negotiateSyncRate [in] If externalPortConfiguration is enabled, specifies whether to enable negotiation of the sync rate
+   * @param automotiveState [in] If externalPortConfiguration is enabled, specifies whether to enable automotive sync rates
+   * @param automotiveTestMode [in] If externalPortConfiguration is enabled, specifies whether to enable the automotive test mode
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS Clause 10.3
    * @param timestamper [in] Provides an object for hardware timestamp
@@ -181,7 +179,7 @@ public:
   IEEE1588Clock
 	  (ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
 	   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
-	   bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+	   bool automotiveTestMode, bool syntonize, uint8_t priority1,
 	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
 	   OS_IPC * ipc, OSLockFactory *lock_factory );
 

@@ -80,7 +80,7 @@ void ClockIdentity::set(LinkLayerAddress * addr)
 IEEE1588Clock::IEEE1588Clock
 ( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
-  bool automotiveTestMode, bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+  bool automotiveTestMode, bool syntonize, uint8_t priority1,
   HWTimestamper *timestamper, OSTimerQueueFactory *timerq_factory,
   OS_IPC *ipc, OSLockFactory *lock_factory )
 {
@@ -88,8 +88,6 @@ IEEE1588Clock::IEEE1588Clock
 	priority2 = 248;
 
 	number_ports = 0;
-
-	this->forceOrdinarySlave = forceOrdinarySlave;
 
     if (externalPortConfiguration == EXT_DISABLED) {
         transmitAnnounce = true;

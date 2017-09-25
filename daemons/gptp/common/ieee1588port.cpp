@@ -91,14 +91,14 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 	clock->registerPort(this, ifindex);
 
 	forceSlave = portInit->forceSlave;
-    switch( clock->getExternalPortConfiguration() ){
-        case EXT_GM:
+	switch( clock->getExternalPortConfiguration() ){
+    	case EXT_GM:
         	port_state = PTP_MASTER;
-         	break;
-      	case EXT_SLAVE:
-         	port_state = PTP_SLAVE;
-         	break;
-      	default:
+        	break;
+    	case EXT_SLAVE:
+        	port_state = PTP_SLAVE;
+        	break;
+    	default:
 		port_state = PTP_INITIALIZING;
    	}
 
@@ -107,7 +107,7 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 	operLogPdelayReqInterval = portInit->operLogPdelayReqInterval;
 	operLogSyncInterval = portInit->operLogSyncInterval;
 
-   	if (clock->getForceAsCapable()) {
+	if (clock->getForceAsCapable()) {
 		asCapable = true;
 
 		if (initialLogSyncInterval == LOG2_INTERVAL_INVALID)
@@ -183,19 +183,19 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 
 	_peer_offset_init = false;
 
-   	if (clock->getAutomotiveState()) {
-      	if (clock->getExternalPortConfiguration() == EXT_GM) {
+	if (clock->getAutomotiveState()) {
+		if (clock->getExternalPortConfiguration() == EXT_GM) {
 			avbSyncState = 1;
-      	} else {
+		} else {
 			avbSyncState = 2;
 		}
 		setStationState(STATION_STATE_RESERVED);
 	}
 
-   	if (clock->getAutomotiveTestMode()) {
-      	linkUpCount = 1; // TODO : really should check the current linkup status http://stackoverflow.com/questions/15723061/how-to-check-if-interface-is-up
-      	linkDownCount = 0;
-   	}
+	if (clock->getAutomotiveTestMode()) {
+		linkUpCount = 1; // TODO : really should check the current linkup status http://stackoverflow.com/questions/15723061/how-to-check-if-interface-is-up
+		linkDownCount = 0;
+	}
 }
 
 void IEEE1588Port::timestamper_init(void)
@@ -251,7 +251,7 @@ bool IEEE1588Port::init_port(int delay[4])
 
 void IEEE1588Port::startPDelay() {
 	if(!pdelayHalted()) {
-      	if (clock->getForceAsCapable()) {
+		if (clock->getForceAsCapable()) {
 			if (log_min_mean_pdelay_req_interval != PTPMessageSignalling::sigMsgInterval_NoSend) {
 				long long unsigned int waitTime;
 				waitTime = ((long long) (pow((double)2, log_min_mean_pdelay_req_interval) * 1000000000.0));
@@ -275,9 +275,9 @@ void IEEE1588Port::stopPDelay() {
 }
 
 void IEEE1588Port::startSyncRateIntervalTimer() {
-   	if (clock->getNegotiateSyncRate()) {
+	if (clock->getNegotiateSyncRate()) {
 		sync_rate_interval_timer_started = true;
-      	if (clock->getExternalPortConfiguration() == EXT_GM) {
+		if (clock->getExternalPortConfiguration() == EXT_GM) {
 			// GM will wait up to 8  seconds for signaling rate
 			// TODO: This isn't according to spec but set because it is believed that some slave devices aren't signalling
 			//  to reduce the rate
@@ -291,40 +291,40 @@ void IEEE1588Port::startSyncRateIntervalTimer() {
 }
 
 void IEEE1588Port::startAnnounce() {
-   	if (clock->getTransmitAnnounce()) {
+	if (clock->getTransmitAnnounce()) {
 		startAnnounceIntervalTimer(16000000);
 	}
 }
 
 void IEEE1588Port::syncDone()
 {
-   	if (clock->getExternalPortConfiguration() == EXT_SLAVE
-        && clock->getAutomotiveState()) {
-      	if (avbSyncState > 0) {
-         	avbSyncState--;
-	        if (avbSyncState == 0) {
-	            setStationState(STATION_STATE_AVB_SYNC);
-	            if (clock->getAutomotiveTestMode()) {
-	               APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-	               	if (testStatusMsg) {
-	                  	testStatusMsg->sendPort(this);
-	                  	delete testStatusMsg;
-	               	}
-	            }
-	        }
-     	}
-   	}
-   	if (clock->getNegotiateSyncRate()) {
-      	if (!sync_rate_interval_timer_started) {
-         	if (log_mean_sync_interval != operLogSyncInterval) {
-            	startSyncRateIntervalTimer();
-         	}
-      	}
-   	}
+	if (clock->getExternalPortConfiguration() == EXT_SLAVE
+		&& clock->getAutomotiveState()) {
+		if (avbSyncState > 0) {
+			avbSyncState--;
+			if (avbSyncState == 0) {
+				setStationState(STATION_STATE_AVB_SYNC);
+				if (clock->getAutomotiveTestMode()) {
+					APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+					if (testStatusMsg) {
+						testStatusMsg->sendPort(this);
+						delete testStatusMsg;
+					}
+				}
+			}
+		}
+	}
+	if (clock->getNegotiateSyncRate()) {
+		if (!sync_rate_interval_timer_started) {
+			if (log_mean_sync_interval != operLogSyncInterval) {
+				startSyncRateIntervalTimer();
+			}
+		}
+	}
 
-   	if( !pdelay_started ) {
-      	startPDelay();
-   	}
+	if( !pdelay_started ) {
+		startPDelay();
+	}
 }
 
 bool IEEE1588Port::serializeState( void *buf, off_t *count ) {
@@ -560,14 +560,14 @@ void IEEE1588Port::processEvent(Event e)
 			Event e4 = NULL_EVENT;
 			
 			// TODO:Start PDelay only if the link is up.
-         	if (!clock->getForceAsCapable()) {
+			if (!clock->getForceAsCapable()) {
 				if (port_state != PTP_SLAVE && port_state != PTP_MASTER) {
 					GPTP_LOG_STATUS("Starting PDelay");
 					startPDelay();
 				}
 			}
 			else {
-            GPTP_LOG_STATUS("Starting PDelay");
+				GPTP_LOG_STATUS("Starting PDelay");
 				startPDelay();
 			}
 
@@ -611,35 +611,35 @@ void IEEE1588Port::processEvent(Event e)
 				clock->addEventTimerLocked(this, e4, interval4);
 		}
 
-     	if (clock->getAutomotiveState()) {
+		if (clock->getAutomotiveState()) {
 			setStationState(STATION_STATE_ETHERNET_READY);
-      }
-         	if (clock->getAutomotiveTestMode()) {
-				APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-				if (testStatusMsg) {
-					testStatusMsg->sendPort(this);
-					delete testStatusMsg;
+		}
+		if (clock->getAutomotiveTestMode()) {
+			APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+			if (testStatusMsg) {
+				testStatusMsg->sendPort(this);
+				delete testStatusMsg;
 			}
-      	}
+		}
 
-      	if (clock->getExternalPortConfiguration() == EXT_SLAVE
-          	&& clock->getNegotiateSyncRate()) {
+		if (clock->getExternalPortConfiguration() == EXT_SLAVE
+			&& clock->getNegotiateSyncRate()) {
 				// Send an initial signalling message
-				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
-				if (sigMsg) {
-					sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoSend);
-					sigMsg->sendPort(this, NULL);
-					delete sigMsg;
-				}
-				startSyncReceiptTimer((unsigned long long)
-					 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
-					  ((double) pow((double)2, getSyncInterval()) *
-					   1000000000.0)));
+			PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
+			if (sigMsg) {
+				sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoSend);
+				sigMsg->sendPort(this, NULL);
+				delete sigMsg;
+			}
+			startSyncReceiptTimer((unsigned long long)
+				 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
+				  ((double) pow((double)2, getSyncInterval()) *
+				   1000000000.0)));
 		}
 		break;
 
 	case STATE_CHANGE_EVENT:
-      	if (clock->getExternalPortConfiguration() == EXT_DISABLED) {       // BMCA is not active with Automotive Profile
+		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {       // BMCA is not active with Automotive Profile
 			if ( clock->getPriority1() != 255 ) {
 				int number_ports, j;
 				PTPMessageAnnounce *EBest = NULL;
@@ -754,30 +754,30 @@ void IEEE1588Port::processEvent(Event e)
 		stopPDelay();
 		haltPdelay(false);
 		startPDelay();
-      	if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
 			GPTP_LOG_EXCEPTION("LINKUP");
 		}
 		else {
 			GPTP_LOG_STATUS("LINKUP");
 		}
 
-      	if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
-         	if (clock->getForceAsCapable()) {
+		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+			if (clock->getForceAsCapable()) {
 				asCapable = true;
-         	}
+			}
 
-         	if (clock->getAutomotiveState()) {
+			if (clock->getAutomotiveState()) {
 				setStationState(STATION_STATE_ETHERNET_READY);
-            	// Start AVB SYNC at 2. It will decrement after each sync. When it reaches 0 the Test Status message
-            	// can be sent
-            	if (clock->getExternalPortConfiguration() == EXT_GM) {
-               		avbSyncState = 1;
-            	}
-            	else {
-               		avbSyncState = 2;
-            	}
-        	}
-         	if (clock->getAutomotiveTestMode()) {
+				// Start AVB SYNC at 2. It will decrement after each sync. When it reaches 0 the Test Status message
+				// can be sent
+				if (clock->getExternalPortConfiguration() == EXT_GM) {
+					avbSyncState = 1;
+				}
+				else {
+					avbSyncState = 2;
+				}
+			}
+			if (clock->getAutomotiveTestMode()) {
 				APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
 				if (testStatusMsg) {
 					testStatusMsg->sendPort(this);
@@ -789,8 +789,8 @@ void IEEE1588Port::processEvent(Event e)
 			log_mean_announce_interval = 0;
 			log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
 
-         	if (clock->getExternalPortConfiguration() == EXT_SLAVE
-             	&& clock->getNegotiateSyncRate()) {
+			if (clock->getExternalPortConfiguration() == EXT_SLAVE
+				&& clock->getNegotiateSyncRate()) {
 				// Send an initial signaling message
 				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
 				if (sigMsg) {
@@ -808,7 +808,7 @@ void IEEE1588Port::processEvent(Event e)
 			setPdelayCount(0);
 			setSyncCount(0);
 
-         	if (clock->getAutomotiveTestMode()) {
+			if (clock->getAutomotiveTestMode()) {
 				linkUpCount++;
 			}
 		}
@@ -817,17 +817,17 @@ void IEEE1588Port::processEvent(Event e)
 
 	case LINKDOWN:
 		stopPDelay();
-      	if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
 			GPTP_LOG_EXCEPTION("LINK DOWN");
-         	if (!clock->getForceAsCapable()) {
-            	setAsCapable(false);
-         	}
+			if (!clock->getForceAsCapable()) {
+				setAsCapable(false);
+			}
 		}
 		else {
 			setAsCapable(false);
 			GPTP_LOG_STATUS("LINK DOWN");
 		}
-      	if (clock->getAutomotiveTestMode()) {
+		if (clock->getAutomotiveTestMode()) {
 			linkDownCount++;
 		}
 		break;
@@ -841,7 +841,7 @@ void IEEE1588Port::processEvent(Event e)
 			else if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES) {
 				incCounter_ieee8021AsPortStatRxSyncReceiptTimeouts();
 			}
-         	if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+			if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
 
 				if( clock->getPriority1() == 255 ) {
 					// Restart timer
@@ -910,8 +910,8 @@ void IEEE1588Port::processEvent(Event e)
 			}
 			else {
 				// Automotive Profile
-            	if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES
-                	&& clock->getNegotiateSyncRate()) {
+				if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES
+					&& clock->getNegotiateSyncRate()) {
 					GPTP_LOG_EXCEPTION("SYNC receipt timeout");
 
 					startSyncReceiptTimer((unsigned long long)
@@ -1051,14 +1051,14 @@ void IEEE1588Port::processEvent(Event e)
 				sync->sendPort(this, NULL);
 				GPTP_LOG_DEBUG("Sent SYNC message");
 
-	            if (clock->getExternalPortConfiguration() == EXT_GM
-	                && clock->getAutomotiveState()) {
+				if (clock->getExternalPortConfiguration() == EXT_GM
+					&& clock->getAutomotiveState()) {
 					if (avbSyncState > 0) {
 						avbSyncState--;
 						if (avbSyncState == 0) {
 							// Send Avnu Automotive Profile status message
 							setStationState(STATION_STATE_AVB_SYNC);
-	                 if (clock->getAutomotiveTestMode()) {
+							if (clock->getAutomotiveTestMode()) {
 								APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
 								if (testStatusMsg) {
 									testStatusMsg->sendPort(this);
@@ -1205,7 +1205,7 @@ void IEEE1588Port::processEvent(Event e)
 		putLastPDelayLock();
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
-      	if (!clock->getForceAsCapable()) {
+		if (!clock->getForceAsCapable()) {
 			GPTP_LOG_DEBUG("PDelay Response Receipt Timeout");
 			if ( getAsCapable() || !getAsCapableEvaluated() ) {
 				GPTP_LOG_STATUS("Did not receive a valid PDelay Response before the timeout. Not AsCapable");
@@ -1241,16 +1241,16 @@ void IEEE1588Port::processEvent(Event e)
 				sendSignalMessage = true;
 			}
 
-         	if (clock->getExternalPortConfiguration() == EXT_GM
-                || clock->getNegotiateSyncRate() == false) {
-            	sendSignalMessage = false;
-         	}
+			if (clock->getExternalPortConfiguration() == EXT_GM
+				|| clock->getNegotiateSyncRate() == false) {
+				sendSignalMessage = false;
+			}
 
 			if (sendSignalMessage) {
 				// Send operational signalling message
 					PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
 					if (sigMsg) {
-	               		if (clock->getExternalPortConfiguration() == EXT_SLAVE)
+						if (clock->getExternalPortConfiguration() == EXT_SLAVE)
 								sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
 							else 
 								sigMsg->setintervals(log_min_mean_pdelay_req_interval, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
@@ -1283,48 +1283,52 @@ PTPMessageAnnounce *IEEE1588Port::calculateERBest(void)
 
 void IEEE1588Port::processAnnounceExt(void)
 {
-   PTPMessageAnnounce *EBest = NULL;
+	PTPMessageAnnounce *EBest = NULL;
 
-     // When defaultDS.externalPortConfiguration is enabled, 
-     // port_state is either master or slave.
-     // If port_state is master, our port is always the grandmaster, 
-     // so we ignore received announce messages.
-     // If port_state is slave, process the received announce information 
-     // as if the BMCA selected that grandmaster.
-   	if (port_state == PTP_SLAVE) {
+	 // When defaultDS.externalPortConfiguration is enabled, 
+	 // port_state is either master or slave.
+	 // If port_state is master, our port is always the grandmaster, 
+	 // so we ignore received announce messages.
+	 // If port_state is slave, process the received announce information 
+	 // as if the BMCA selected that grandmaster.
+	if (port_state == PTP_SLAVE) {
 
-         // Retrieve the most recently received announce.
-      EBest = this->calculateERBest();
+		GPTP_LOG_DEBUG( "The port is slave state. Process the received announce information" );
+		 // Retrieve the most recently received announce.
+		EBest = this->calculateERBest();
          // If it is NULL for some reason, do nothing.
-      	if (EBest == NULL)
-         	return;
+		if (EBest == NULL)
+			return;
 
-         // Check if we've changed grandmaster. In a properly configured
-         // network, this should occur only once, since only one system
-         // should be sending announce (if at all).
-     	uint8_t LastEBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
-      	char EBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
-      	clock->getLastEBestIdentity().
-         	getIdentityString(LastEBestClockIdentity);
-      	EBest->getGrandmasterIdentity(EBestClockIdentity);
-      	if (memcmp(EBestClockIdentity, LastEBestClockIdentity,
-            PTP_CLOCK_IDENTITY_LENGTH) != 0) {
+		 // Check if we've changed grandmaster. In a properly configured
+		 // network, this should occur only once, since only one system
+		 // should be sending announce (if at all).
+		uint8_t LastEBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
+		char EBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
+		clock->getLastEBestIdentity().
+			getIdentityString(LastEBestClockIdentity);
+		EBest->getGrandmasterIdentity(EBestClockIdentity);
+		if (memcmp(EBestClockIdentity, LastEBestClockIdentity,
+			PTP_CLOCK_IDENTITY_LENGTH) != 0) {
 
-	        ClockIdentity clock_identity;
-	        unsigned char priority1;
-	        unsigned char priority2;
-	        ClockQuality *clock_quality;
-	        clock_identity.set((uint8_t *)EBestClockIdentity);
-	        getClock()->setLastEBestIdentity(clock_identity);
-	        getClock()->setGrandmasterClockIdentity(clock_identity);
-	        priority1 = EBest->getGrandmasterPriority1();
-	        getClock()->setGrandmasterPriority1(priority1);
-	        priority2 = EBest->getGrandmasterPriority2();
-	        getClock()->setGrandmasterPriority2(priority2);
-	        clock_quality = EBest->getGrandmasterClockQuality();
-	        getClock()->setGrandmasterClockQuality(*clock_quality);
-      	}
-   	}
+			GPTP_LOG_DEBUG( "Grandmaster is changed. The new grandmaster is %s", EBestClockIdentity );
+			ClockIdentity clock_identity;
+			unsigned char priority1;
+			unsigned char priority2;
+			ClockQuality *clock_quality;
+			clock_identity.set((uint8_t *)EBestClockIdentity);
+			getClock()->setLastEBestIdentity(clock_identity);
+			getClock()->setGrandmasterClockIdentity(clock_identity);
+			priority1 = EBest->getGrandmasterPriority1();
+			getClock()->setGrandmasterPriority1(priority1);
+			priority2 = EBest->getGrandmasterPriority2();
+			getClock()->setGrandmasterPriority2(priority2);
+			clock_quality = EBest->getGrandmasterClockQuality();
+			getClock()->setGrandmasterClockQuality(*clock_quality);
+		}
+	} else {
+		GPTP_LOG_DEBUG( "The port is always grandmaster. Ignore received announce messages." );
+	}
 }
 
 void IEEE1588Port::recoverPort(void)
@@ -1354,31 +1358,31 @@ void IEEE1588Port::getDeviceTime
 void IEEE1588Port::becomeMaster( bool annc ) {
 	port_state = PTP_MASTER;
 	// Stop announce receipt timeout timer
-   	if (clock->getTransmitAnnounce()) {
+	if (clock->getTransmitAnnounce()) {
 		clock->deleteEventTimerLocked( this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES );
-   	}
+	}
 
 	// Stop sync receipt timeout timer
 	stopSyncReceiptTimer();
 
-   	if (clock->getExternalPortConfiguration() == EXT_GM) {
-      // Set grandmaster info to myself
-      	ClockIdentity clock_identity;
-      	unsigned char priority1;
-      	unsigned char priority2;
-      	ClockQuality clock_quality;
+	if (clock->getExternalPortConfiguration() == EXT_GM) {
+		// Set grandmaster info to myself
+		ClockIdentity clock_identity;
+		unsigned char priority1;
+		unsigned char priority2;
+		ClockQuality clock_quality;
 
-      	clock_identity = getClock()->getClockIdentity();
-      	getClock()->setGrandmasterClockIdentity(clock_identity);
-      	priority1 = getClock()->getPriority1();
-     	getClock()->setGrandmasterPriority1(priority1);
-      	priority2 = getClock()->getPriority2();
-      	getClock()->setGrandmasterPriority2(priority2);
-      	clock_quality = getClock()->getClockQuality();
-      	getClock()->setGrandmasterClockQuality(clock_quality);
-  	}
+		clock_identity = getClock()->getClockIdentity();
+		getClock()->setGrandmasterClockIdentity(clock_identity);
+		priority1 = getClock()->getPriority1();
+		getClock()->setGrandmasterPriority1(priority1);
+		priority2 = getClock()->getPriority2();
+		getClock()->setGrandmasterPriority2(priority2);
+		clock_quality = getClock()->getClockQuality();
+		getClock()->setGrandmasterClockQuality(clock_quality);
+	}
 
-   	if( annc && clock->getTransmitAnnounce() ) {
+	if( annc && clock->getTransmitAnnounce() ) {
 		startAnnounce();
 	}
 	startSyncIntervalTimer(16000000);
@@ -1395,42 +1399,42 @@ void IEEE1588Port::becomeSlave( bool restart_syntonization ) {
 
 	port_state = PTP_SLAVE;
 
-   	if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+	if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
 		clock->addEventTimerLocked
 		  (this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES,
 		   (ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER*
 			(unsigned long long)
 			(pow((double)2,getAnnounceInterval())*1000000000.0)));
    	} else {
-      	// When externalPortConfiguration is enabled as a slave, we might receive
-      	// grandmaster info in the future from an Announce message, but that will
-      	// not occur if the grandmaster does not transmit Announce 
-      	// (e.g. transmitAnnounce=false). Therefore, we need to initialize the
-      	// parentDS.grandmaster members as follows:
-      	//- If there a value for "unknown", use that, otherwise
-      	//  - If the member indicates whether this is the best GM, 
-      	//      use a value that represents best GM.
-      	//  - If the member represents quality,
-      	//      use the worst value that is conformant, since we don't know.
-      	ClockIdentity clock_identity;
-      	ClockQuality clock_quality;
+		// When externalPortConfiguration is enabled as a slave, we might receive
+		// grandmaster info in the future from an Announce message, but that will
+		// not occur if the grandmaster does not transmit Announce 
+		// (e.g. transmitAnnounce=false). Therefore, we need to initialize the
+		// parentDS.grandmaster members as follows:
+		//- If there a value for "unknown", use that, otherwise
+		//  - If the member indicates whether this is the best GM, 
+		//      use a value that represents best GM.
+		//  - If the member represents quality,
+		//      use the worst value that is conformant, since we don't know.
+		ClockIdentity clock_identity;
+		ClockQuality clock_quality;
 
-      	// The default constructor for ClockIdentity uses all-zero.
-      	// For 1588 and 802.1AS, all-zero is a special value that is 
-      	// invalid/unknown. The only other value we could use is all-one,
-      	// but since that can also mean "all clocks", it is not appropriate.
-      	getClock()->setGrandmasterClockIdentity(clock_identity);
-      	// Using zero for the priorities indicates that the remote GM is the
-      	// best, which is true since we are externally configuring it to be GM.
-      	getClock()->setGrandmasterPriority1(0);
-      	getClock()->setGrandmasterPriority2(0);
-      	// 802.1AS-2011 8.6.2.2, value for unknown
-      	clock_quality.cq_class = 248;
-      	// 802.1AS-2011 8.6.2.3, value for unknown
-      	clock_quality.clockAccuracy = 0xFE;
-      	// 802.1AS-2011 8.6.2.3, value for unknown, and also worst conformant
-      	clock_quality.offsetScaledLogVariance = 0x4100;
-      	getClock()->setGrandmasterClockQuality(clock_quality);
+		// The default constructor for ClockIdentity uses all-zero.
+		// For 1588 and 802.1AS, all-zero is a special value that is 
+		// invalid/unknown. The only other value we could use is all-one,
+		// but since that can also mean "all clocks", it is not appropriate.
+		getClock()->setGrandmasterClockIdentity(clock_identity);
+		// Using zero for the priorities indicates that the remote GM is the
+		// best, which is true since we are externally configuring it to be GM.
+		getClock()->setGrandmasterPriority1(0);
+		getClock()->setGrandmasterPriority2(0);
+		// 802.1AS-2011 8.6.2.2, value for unknown
+		clock_quality.cq_class = 248;
+		// 802.1AS-2011 8.6.2.3, value for unknown
+		clock_quality.clockAccuracy = 0xFE;
+		// 802.1AS-2011 8.6.2.3, value for unknown, and also worst conformant
+		clock_quality.offsetScaledLogVariance = 0x4100;
+		getClock()->setGrandmasterClockQuality(clock_quality);
 	}
 
 	GPTP_LOG_STATUS("Switching to Slave" );
@@ -1494,7 +1498,7 @@ void IEEE1588Port::addSockAddrMap
 
 bool IEEE1588Port::getTestMode()
 {
-   return clock->getAutomotiveTestMode();
+	return clock->getAutomotiveTestMode();
 }
 
 int IEEE1588Port::getTxTimestamp
@@ -1544,14 +1548,14 @@ int IEEE1588Port::getRxTimestamp(PortIdentity * sourcePortIdentity,
 
 bool IEEE1588Port::setLinkDelay(int64_t delay)
 {
-   one_way_delay = delay;
-   int64_t abs_delay = (one_way_delay < 0 ? -one_way_delay : one_way_delay);
+	one_way_delay = delay;
+	int64_t abs_delay = (one_way_delay < 0 ? -one_way_delay : one_way_delay);
 
-   if ( clock->getAutomotiveTestMode() ) {
-      GPTP_LOG_STATUS("Link delay: %d", delay);
-   }
+	if ( clock->getAutomotiveTestMode() ) {
+		GPTP_LOG_STATUS("Link delay: %d", delay);
+	}
 
-   return (abs_delay <= neighbor_prop_delay_thresh);
+	return (abs_delay <= neighbor_prop_delay_thresh);
 }
 
 void IEEE1588Port::startSyncReceiptTimer(long long unsigned int waitTime) {

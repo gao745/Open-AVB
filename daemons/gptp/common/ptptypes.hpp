@@ -66,9 +66,9 @@ typedef enum {
 * ExtPortConfig enumeration
 */
 typedef enum {
-  EXT_DISABLED = 0, //!< externalPortConfiguration is disabled
-  EXT_GM = 1, //!< externalPortConfiguration is enabled, port state is gm
-  EXT_SLAVE = 2, //!< externalPortConfiguration is enable, port state is slave
+	EXT_DISABLED = 0, //!< externalPortConfiguration is disabled
+	EXT_GM = 1, //!< externalPortConfiguration is enabled, port state is gm
+	EXT_SLAVE = 2, //!< externalPortConfiguration is enable, port state is slave
 } ExtPortConfig;
 
 #endif/*PTP_TYPES_HPP*/

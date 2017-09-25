@@ -68,7 +68,8 @@ void print_usage( char *arg0 ) {
 			"%s <network interface> [-S] [-P] [-M <filename>] "
 			"[-G <group>] [-R <priority 1>] "
 			"[-D <gb_tx_delay,gb_rx_delay,mb_tx_delay,mb_rx_delay>] "
-			"[-T] [-L] [-E] [-GM] [-INITSYNC <value>] [-OPERSYNC <value>] "
+			"[-V <port_state>] [-ETE] [-DC] [-DS] [-DR] [-ETX]"
+			"[-INITSYNC <value>] [-OPERSYNC <value>] "
 			"[-INITPDELAY <value>] [-OPERPDELAY <value>] "
 			"[-F <path to gptp_cfg.ini file>] "
 			"\n",
@@ -81,14 +82,12 @@ void print_usage( char *arg0 ) {
 		  "\t-G <group> group id for shared memory\n"
 		  "\t-R <priority 1> priority 1 value\n"
 		  "\t-D Phy Delay <gb_tx_delay,gb_rx_delay,mb_tx_delay,mb_rx_delay>\n"
-		  "\t-T force master\n"
-		  "\t-L force slave\n"
-		  "\t-V enable AVnu Automotive Profile\n"
-		  "\t-DE disable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-V enable AVnu Automotive Profile <port_state> (gm or slave)\n"
+		  "\t-ETE enable test mode (as defined in AVnu automotive profile)\n"
 		  "\t-DC do not force asCapable always true (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-DS disable automotive states (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-DR disable sync rate negotiation (valid when AVnu Automotive Profile is enabled)\n"
-		  "\t-ET enable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-ETX enable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-INITSYNC <value> initial sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-OPERSYNC <value> operational sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-INITPDELAY <value> initial pdelay interval (Log base 2. 0 = 1 second)\n"
@@ -113,7 +112,6 @@ int main(int argc, char **argv)
 	bool pps = false;
 	uint8_t priority1 = 248;
 	bool override_portstate = false;
-	PortState port_state = PTP_SLAVE;
 
 	char *restoredata = NULL;
 	char *restoredataptr = NULL;
@@ -165,7 +163,7 @@ int main(int argc, char **argv)
 	bool forceAsCapable = true;
 	bool negotiateSyncRate = true;
 	bool automotiveState = true;
-	bool automotiveTestMode = true;
+	bool automotiveTestMode = false;
 
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
@@ -192,14 +190,6 @@ int main(int argc, char **argv)
 			if( strcmp(argv[i] + 1,  "S") == 0 ) {
 				// Get syntonize directive from command line
 				syntonize = true;
-			}
-			else if( strcmp(argv[i] + 1,  "T" ) == 0 ) {
-				override_portstate = true;
-				port_state = PTP_MASTER;
-			}
-			else if( strcmp(argv[i] + 1,  "L" ) == 0 ) {
-				override_portstate = true;
-				port_state = PTP_SLAVE;
 			}
 			else if( strcmp(argv[i] + 1,  "M" )  == 0 ) {
 				// Open file
@@ -270,9 +260,21 @@ int main(int argc, char **argv)
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
 				automotiveProfile = true;
+				if (i + 1 < argc) {
+					if (strcmp(argv[i + 1], "gm") == 0) {
+						extPortConfig = EXT_GM;
+					} else if (strcmp(argv[i + 1], "slave == 0")) {
+						extPortConfig = EXT_SLAVE;
+					} else {
+						printf("set external port configuration to be \"gm\" or \"slave\"\n.");
+					}
+				} else {
+					printf("external port configuration needs to be specified to either \"gm\"
+						   or \"slave\"\n");
+				}
 			}
-			else if (strcmp(argv[i] + 1, "DE") == 0) {
-				automotiveTestMode = false;
+			else if (strcmp(argv[i] + 1, "ETE") == 0) {
+				automotiveTestMode = true;
 			}
 			else if (strcmp(argv[i] + 1, "DC") == 0) {
 				forceAsCapable = false;
@@ -283,7 +285,7 @@ int main(int argc, char **argv)
 			else if (strcmp(argv[i] + 1, "DR") == 0) {
 				negotiateSyncRate = false;
 			}
-			else if (strcmp(argv[i] + 1, "ET") == 0) {
+			else if (strcmp(argv[i] + 1, "ETX") == 0) {
 				transmitAnnounce = true;
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
@@ -307,18 +309,6 @@ int main(int argc, char **argv)
 					fprintf(stderr, "config file must be specified.\n");
 				}
 			}
-		}
-	}
-
-	if (automotiveProfile)
-	{
-		if (port_state == PTP_MASTER)
-		{
-			extPortConfig = EXT_GM;
-		}
-		else
-		{
-			extPortConfig = EXT_SLAVE;
 		}
 	}
 
@@ -364,7 +354,7 @@ int main(int argc, char **argv)
 
 	pClock = new IEEE1588Clock( extPortConfig, transmitAnnounce,
 		                        forceAsCapable, negotiateSyncRate, automotiveState, automotiveTestMode,
-		                        false, syntonize, priority1, timestamper,
+		                        syntonize, priority1, timestamper,
 								timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
@@ -444,12 +434,10 @@ int main(int argc, char **argv)
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
 
-	if (automotiveProfile) {
-		override_portstate = true;
-	}
-
-	if( override_portstate ) {
-		pPort->setPortState( port_state );
+	if( extPortConfig == EXT_SLAVE ) {
+		pPort->setPortState( PTP_SLAVE );
+	} else if( extPortConfig == EXT_GM ) {
+		pPort->setPortState( PTP_MASTER );
 	}
 
 	// Start PPS if requested
