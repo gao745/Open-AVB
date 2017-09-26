@@ -298,6 +298,7 @@ void IEEE1588Port::startAnnounce() {
 
 void IEEE1588Port::syncDone()
 {
+	GPTP_LOG_VERBOSE("Sync complete");
 	if (clock->getExternalPortConfiguration() == EXT_SLAVE
 		&& clock->getAutomotiveState()) {
 		if (avbSyncState > 0) {
@@ -639,7 +640,7 @@ void IEEE1588Port::processEvent(Event e)
 		break;
 
 	case STATE_CHANGE_EVENT:
-		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {       // BMCA is not active with Automotive Profile
+		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {       // BMCA is not active with external port configuration
 			if ( clock->getPriority1() != 255 ) {
 				int number_ports, j;
 				PTPMessageAnnounce *EBest = NULL;
@@ -754,14 +755,14 @@ void IEEE1588Port::processEvent(Event e)
 		stopPDelay();
 		haltPdelay(false);
 		startPDelay();
-		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+		if (clock->getAutomotiveProfile()) {
 			GPTP_LOG_EXCEPTION("LINKUP");
 		}
 		else {
 			GPTP_LOG_STATUS("LINKUP");
 		}
 
-		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+		if (clock->getAutomotiveProfile()) {
 			if (clock->getForceAsCapable()) {
 				asCapable = true;
 			}
@@ -817,7 +818,7 @@ void IEEE1588Port::processEvent(Event e)
 
 	case LINKDOWN:
 		stopPDelay();
-		if (clock->getExternalPortConfiguration() != EXT_DISABLED) {
+		if (clock->getAutomotiveProfile()) {
 			GPTP_LOG_EXCEPTION("LINK DOWN");
 			if (!clock->getForceAsCapable()) {
 				setAsCapable(false);
@@ -841,7 +842,7 @@ void IEEE1588Port::processEvent(Event e)
 			else if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES) {
 				incCounter_ieee8021AsPortStatRxSyncReceiptTimeouts();
 			}
-			if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+			if (!clock->getAutomotiveProfile()) {
 
 				if( clock->getPriority1() == 255 ) {
 					// Restart timer
@@ -1209,7 +1210,7 @@ void IEEE1588Port::processEvent(Event e)
 			GPTP_LOG_DEBUG("PDelay Response Receipt Timeout");
 			if ( getAsCapable() || !getAsCapableEvaluated() ) {
 				GPTP_LOG_STATUS("Did not receive a valid PDelay Response before the timeout. Not AsCapable");
-         }
+			}
 			setAsCapable(false);
 		}
 		pdelay_count = 0;
@@ -1250,7 +1251,7 @@ void IEEE1588Port::processEvent(Event e)
 				// Send operational signalling message
 					PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
 					if (sigMsg) {
-						if (clock->getExternalPortConfiguration() == EXT_SLAVE)
+						if (clock->getAutomotiveProfile())
 								sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);
 							else 
 								sigMsg->setintervals(log_min_mean_pdelay_req_interval, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoChange);

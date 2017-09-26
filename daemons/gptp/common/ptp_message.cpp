@@ -1843,7 +1843,7 @@ void PTPMessageSignalling::processMessage(IEEE1588Port * port)
 		port->startSyncIntervalTimer(waitTime);
 	}
 
-	if (port->getClock()->getExternalPortConfiguration() == EXT_DISABLED) {
+	if (!port->getClock()->getAutomotiveProfile()) {
 		if (announceInterval == PTPMessageSignalling::sigMsgInterval_Initial) {
 			// TODO: Needs implementation
 			GPTP_LOG_WARNING("Signal received to set Announce message to initial interval: Not implemented");

@@ -93,11 +93,12 @@ private:
 	uint8_t time_source;
 
 	ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
-	bool transmit_announce; // Transmit announce messages? This can be false only when external_port_configuration is enabled.
-	bool force_asCapable; // AsCapable always be true? This can be true only when external_port_configuration is enabled.
-	bool negotiate_sync_rate; // Enable sync rate negotiation? This is valid when external_port_configuration is enabled
-	bool automotive_state; // Enable automotive states? This can be true only when external_port_configuration is enabled.
-	bool automotive_test_mode; // Transmit "test mode" message? This can be true only when external_port_configuration is enabled.
+	bool automotive_profile; // Enable automoitve profile? This can be true when external_port_configuration is enabled.
+	bool transmit_announce; // Transmit announce messages? This is set to false by default in automotive_profile.
+	bool force_asCapable; // AsCapable always be true? This is set to true by default in automotive_profile.
+	bool negotiate_sync_rate; // Enable sync rate negotiation? This is set tot true by default in automotive_profile.
+	bool automotive_state; // Enable automotive states? This is set to true by default in automotive_profile.
+	bool automotive_test_mode; // Transmit "test mode" message? This can be true by default in automotive_profile.
 
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
@@ -164,11 +165,12 @@ public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
    * @param externalPortConfiguration [in] If EXT_ENABLED, disables BMCA and configures port state externally (e.g. command-line)
-   * @param transmitAnnounce [in] If externalPortConfiguration is enabled, specifies whether to transmit announce messages
-   * @param forceAsCapable [in] If externalPortConfiguration is enabled, specifies whether to set asCapable always be true 
-   * @param negotiateSyncRate [in] If externalPortConfiguration is enabled, specifies whether to enable negotiation of the sync rate
-   * @param automotiveState [in] If externalPortConfiguration is enabled, specifies whether to enable automotive sync rates
-   * @param automotiveTestMode [in] If externalPortConfiguration is enabled, specifies whether to enable the automotive test mode
+   * @param automotiveProfile [in] Specifies if automotive profile features are enabled.
+   * @param transmitAnnounce [in] If automotive_profile is enabled, specifies whether to transmit announce messages
+   * @param forceAsCapable [in] If automotive_profile is enabled, specifies whether to set asCapable always be true 
+   * @param negotiateSyncRate [in] If automotive_profile is enabled, specifies whether to enable negotiation of the sync rate
+   * @param automotiveState [in] If automotive_profile is enabled, specifies whether to enable automotive sync rates
+   * @param automotiveTestMode [in] If automotive_profile is enabled, specifies whether to enable the automotive test mode
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS Clause 10.3
    * @param timestamper [in] Provides an object for hardware timestamp
@@ -177,7 +179,7 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	  (ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+	  (ExtPortConfig externalPortConfiguration, bool automotiveProfile, bool transmitAnnounce,
 	   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
 	   bool automotiveTestMode, bool syntonize, uint8_t priority1,
 	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
@@ -406,6 +408,14 @@ public:
   }
 
   /**
+  * @brief  Gets automotive_profile attribute
+  * @return automotive_profile
+  */
+  bool getAutomotiveProfile(void) {
+	 return automotive_profile;
+  }
+
+  /**
   * @brief  Gets transmit_announce attribute
   * @return transmit_announce attribute
   */
@@ -444,7 +454,6 @@ public:
   bool getAutomotiveTestMode(void) {
 	 return automotive_test_mode;
   }
-
 
   /**
    * @brief  Gets nextPortId value

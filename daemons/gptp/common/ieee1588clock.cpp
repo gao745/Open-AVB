@@ -78,7 +78,7 @@ void ClockIdentity::set(LinkLayerAddress * addr)
 }
 
 IEEE1588Clock::IEEE1588Clock
-( ExtPortConfig externalPortConfiguration, bool transmitAnnounce,
+( ExtPortConfig externalPortConfiguration, bool automotiveProfile, bool transmitAnnounce,
   bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
   bool automotiveTestMode, bool syntonize, uint8_t priority1,
   HWTimestamper *timestamper, OSTimerQueueFactory *timerq_factory,
@@ -89,20 +89,27 @@ IEEE1588Clock::IEEE1588Clock
 
 	number_ports = 0;
 
-    if (externalPortConfiguration == EXT_DISABLED) {
-        transmitAnnounce = true;
-        forceAsCapable = false;
-        negotiateSyncRate = false;
-        automotiveState = false;
-        automotiveTestMode = false;
-    }
+	if (!automotiveProfile) {
+		//The following boolean options are only configurable when automotive profile is enabled
+		transmitAnnounce = true;
+		forceAsCapable = false;
+		negotiateSyncRate = false;
+		automotiveState = false;
+		automotiveTestMode = false;
+	} else {
+		//external port configuration feature is enabled by default in automotive profile
+		if (externalPortConfiguration == EXT_DISABLED) {
+			externalPortConfiguration = EXT_ENABLED;
+		}
+	}
 
-    this->external_port_configuration = externalPortConfiguration;
-    this->transmit_announce = transmitAnnounce;
-    this->force_asCapable = forceAsCapable;
-    this->negotiate_sync_rate = negotiateSyncRate;
-    this->automotive_state = automotiveState;
-    this->automotive_test_mode = automotiveTestMode;
+	this->external_port_configuration = externalPortConfiguration;
+	this->automotive_profile = automotiveProfile;
+	this->transmit_announce = transmitAnnounce;
+	this->force_asCapable = forceAsCapable;
+	this->negotiate_sync_rate = negotiateSyncRate;
+	this->automotive_state = automotiveState;
+	this->automotive_test_mode = automotiveTestMode;
 
     /*TODO: Make the values below configurable*/
 	clock_quality.clockAccuracy = 0x22;
