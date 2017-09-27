@@ -113,8 +113,6 @@ int main(int argc, char **argv)
 	int i;
 	bool pps = false;
 	uint8_t priority1 = 248;
-	bool override_portstate = false;
-	PortState port_state = PTP_SLAVE;
 
 	char *restoredata = NULL;
 	char *restoredataptr = NULL;
@@ -160,13 +158,14 @@ int main(int argc, char **argv)
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
 
-	ExtPortConfig ext_port_config = EXT_DISABLED;
-	bool automotive_profile = false;
-	bool transmit_announce = false;
-	bool force_ascapable = true;
-	bool negotiate_sync_rate = true;
-	bool automotive_state = true;
-	bool automotive_test_mode = false;
+	IEEE1588ClockExtPortConfig_t ext_port_config = {EXT_DISABLED, PTP_INITIALIZING};
+	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
+	automotive_profile_config.automotiveProfile = false;
+	automotive_profile_config.transmitAnnounce = false;
+	automotive_profile_config.forceAsCapable = true;
+	automotive_profile_config.negotiateSyncRate = true;
+	automotive_profile_config.automotiveState = true;
+	automotive_profile_config.automotiveTestMode = false;
 
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
@@ -264,13 +263,11 @@ int main(int argc, char **argv)
 			else if (strcmp(argv[i] + 1, "EP") == 0) {
 				if (i + 1 < argc) {
 					if (strcmp(argv[i + 1], "gm") == 0) {
-						ext_port_config = EXT_GM;
-						port_state = PTP_MASTER;
-						override_portstate = true;
+						ext_port_config.externalPortConfiguration = EXT_ENABLED;
+						ext_port_config.staticPortState = PTP_MASTER;
 					} else if (strcmp(argv[i + 1], "slave == 0")) {
-						ext_port_config = EXT_SLAVE;
-						port_state = PTP_SLAVE;
-						override_portstate = true;
+						ext_port_config.externalPortConfiguration = EXT_ENABLED;
+						ext_port_config.staticPortState = PTP_SLAVE;
 					} else {
 						printf("set external port configuration to be \"gm\" or \"slave\"\n");
 					}
@@ -280,22 +277,22 @@ int main(int argc, char **argv)
 				}
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
-				automotive_profile = true;
+				automotive_profile_config.automotiveProfile = true;
 			}
 			else if (strcmp(argv[i] + 1, "ETE") == 0) {
-				automotive_test_mode = true;
+				automotive_profile_config.automotiveTestMode = true;
 			}
 			else if (strcmp(argv[i] + 1, "DC") == 0) {
-				force_ascapable = false;
+				automotive_profile_config.forceAsCapable = false;
 			}
 			else if (strcmp(argv[i] + 1, "DS") == 0) {
-				automotive_state = false;
+				automotive_profile_config.automotiveState = false;
 			}
 			else if (strcmp(argv[i] + 1, "DR") == 0) {
-				negotiate_sync_rate = false;
+				automotive_profile_config.negotiateSyncRate = false;
 			}
 			else if (strcmp(argv[i] + 1, "ETX") == 0) {
-				transmit_announce = true;
+				automotive_profile_config.transmitAnnounce = true;
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
 				portInit.initialLogSyncInterval = atoi(argv[++i]);
@@ -361,8 +358,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	pClock = new IEEE1588Clock( ext_port_config, automotive_profile, transmit_announce,
-		                        force_ascapable, negotiate_sync_rate, automotive_state, automotive_test_mode,
+	pClock = new IEEE1588Clock( ext_port_config,
+								automotive_profile_config,
 		                        syntonize, priority1, timestamper,
 								timerq_factory, ipc, lock_factory );
 
@@ -443,8 +440,8 @@ int main(int argc, char **argv)
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
 
-	if( override_portstate ) {
-		pPort->setPortState( port_state );
+	if( ext_port_config.externalPortConfiguration == EXT_ENABLED ) {
+		pPort->setPortState( ext_port_config.staticPortState );
 	}
 
 	// Start PPS if requested

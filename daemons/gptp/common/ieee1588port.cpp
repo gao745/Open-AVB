@@ -91,16 +91,11 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 	clock->registerPort(this, ifindex);
 
 	forceSlave = portInit->forceSlave;
-	switch( clock->getExternalPortConfiguration() ){
-    	case EXT_GM:
-        	port_state = PTP_MASTER;
-        	break;
-    	case EXT_SLAVE:
-        	port_state = PTP_SLAVE;
-        	break;
-    	default:
+	if (clock->getExternalPortConfiguration() == EXT_ENABLED ) {
+		port_state = clock->getStaticPortState();
+	} else {
 		port_state = PTP_INITIALIZING;
-   	}
+	}
 
 	initialLogSyncInterval = portInit->initialLogSyncInterval;
 	initialLogPdelayReqInterval = portInit->initialLogPdelayReqInterval;
@@ -184,7 +179,7 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 	_peer_offset_init = false;
 
 	if (clock->getAutomotiveState()) {
-		if (clock->getExternalPortConfiguration() == EXT_GM) {
+		if (clock->getStaticPortState() == PTP_MASTER) {
 			avbSyncState = 1;
 		} else {
 			avbSyncState = 2;
@@ -277,7 +272,7 @@ void IEEE1588Port::stopPDelay() {
 void IEEE1588Port::startSyncRateIntervalTimer() {
 	if (clock->getNegotiateSyncRate()) {
 		sync_rate_interval_timer_started = true;
-		if (clock->getExternalPortConfiguration() == EXT_GM) {
+		if (clock->getStaticPortState() == PTP_MASTER) {
 			// GM will wait up to 8  seconds for signaling rate
 			// TODO: This isn't according to spec but set because it is believed that some slave devices aren't signalling
 			//  to reduce the rate
@@ -299,7 +294,7 @@ void IEEE1588Port::startAnnounce() {
 void IEEE1588Port::syncDone()
 {
 	GPTP_LOG_VERBOSE("Sync complete");
-	if (clock->getExternalPortConfiguration() == EXT_SLAVE
+	if (clock->getStaticPortState() == PTP_SLAVE
 		&& clock->getAutomotiveState()) {
 		if (avbSyncState > 0) {
 			avbSyncState--;
@@ -623,7 +618,7 @@ void IEEE1588Port::processEvent(Event e)
 			}
 		}
 
-		if (clock->getExternalPortConfiguration() == EXT_SLAVE
+		if (clock->getStaticPortState() == PTP_SLAVE
 			&& clock->getNegotiateSyncRate()) {
 				// Send an initial signalling message
 			PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
@@ -771,7 +766,7 @@ void IEEE1588Port::processEvent(Event e)
 				setStationState(STATION_STATE_ETHERNET_READY);
 				// Start AVB SYNC at 2. It will decrement after each sync. When it reaches 0 the Test Status message
 				// can be sent
-				if (clock->getExternalPortConfiguration() == EXT_GM) {
+				if (clock->getStaticPortState() == PTP_MASTER) {
 					avbSyncState = 1;
 				}
 				else {
@@ -790,7 +785,7 @@ void IEEE1588Port::processEvent(Event e)
 			log_mean_announce_interval = 0;
 			log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
 
-			if (clock->getExternalPortConfiguration() == EXT_SLAVE
+			if (clock->getStaticPortState() == PTP_SLAVE
 				&& clock->getNegotiateSyncRate()) {
 				// Send an initial signaling message
 				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
@@ -1052,7 +1047,7 @@ void IEEE1588Port::processEvent(Event e)
 				sync->sendPort(this, NULL);
 				GPTP_LOG_DEBUG("Sent SYNC message");
 
-				if (clock->getExternalPortConfiguration() == EXT_GM
+				if (clock->getStaticPortState() == PTP_MASTER
 					&& clock->getAutomotiveState()) {
 					if (avbSyncState > 0) {
 						avbSyncState--;
@@ -1242,7 +1237,7 @@ void IEEE1588Port::processEvent(Event e)
 				sendSignalMessage = true;
 			}
 
-			if (clock->getExternalPortConfiguration() == EXT_GM
+			if (clock->getStaticPortState() == PTP_MASTER
 				|| clock->getNegotiateSyncRate() == false) {
 				sendSignalMessage = false;
 			}
@@ -1366,7 +1361,7 @@ void IEEE1588Port::becomeMaster( bool annc ) {
 	// Stop sync receipt timeout timer
 	stopSyncReceiptTimer();
 
-	if (clock->getExternalPortConfiguration() == EXT_GM) {
+	if (clock->getStaticPortState() == PTP_MASTER) {
 		// Set grandmaster info to myself
 		ClockIdentity clock_identity;
 		unsigned char priority1;
@@ -1495,11 +1490,6 @@ void IEEE1588Port::addSockAddrMap
 {
 	identity_map[*destIdentity] = *remote;
 	return;
-}
-
-bool IEEE1588Port::getTestMode()
-{
-	return clock->getAutomotiveTestMode();
 }
 
 int IEEE1588Port::getTxTimestamp

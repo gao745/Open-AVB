@@ -515,7 +515,7 @@ class IEEE1588Port {
 	 * @brief  Starts pDelay event timer if not yet started.
 	 * @return void
 	 */
-   void syncDone();
+	void syncDone();
 
 	/**
 	 * @brief  Gets a pointer to timer_factory object
@@ -1477,12 +1477,6 @@ class IEEE1588Port {
 	void setLastGmTimeBaseIndicator(uint16_t gmTimeBaseIndicator) {
 		lastGmTimeBaseIndicator = gmTimeBaseIndicator;
 	}
-
-	/**
-	 * @brief  Gets the testMode
-	 * @return bool of the test mode value
-	 */
-   bool getTestMode(void);
 
 	/**
 	 * @brief  Increment IEEE Port counter:

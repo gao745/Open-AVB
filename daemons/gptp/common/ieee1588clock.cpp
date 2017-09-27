@@ -78,9 +78,9 @@ void ClockIdentity::set(LinkLayerAddress * addr)
 }
 
 IEEE1588Clock::IEEE1588Clock
-( ExtPortConfig externalPortConfiguration, bool automotiveProfile, bool transmitAnnounce,
-  bool forceAsCapable, bool negotiateSyncRate, bool automotiveState,
-  bool automotiveTestMode, bool syntonize, uint8_t priority1,
+( IEEE1588ClockExtPortConfig_t extPortConfig,
+  IEEE1588ClockAutomotiveProfileConfig_t automotiveProfileConfig,
+  bool syntonize, uint8_t priority1,
   HWTimestamper *timestamper, OSTimerQueueFactory *timerq_factory,
   OS_IPC *ipc, OSLockFactory *lock_factory )
 {
@@ -89,27 +89,32 @@ IEEE1588Clock::IEEE1588Clock
 
 	number_ports = 0;
 
-	if (!automotiveProfile) {
+	if (!automotiveProfileConfig.automotiveProfile) {
 		//The following boolean options are only configurable when automotive profile is enabled
-		transmitAnnounce = true;
-		forceAsCapable = false;
-		negotiateSyncRate = false;
-		automotiveState = false;
-		automotiveTestMode = false;
+		automotiveProfileConfig.transmitAnnounce = true;
+		automotiveProfileConfig.forceAsCapable = false;
+		automotiveProfileConfig.negotiateSyncRate = false;
+		automotiveProfileConfig.automotiveState = false;
+		automotiveProfileConfig.automotiveTestMode = false;
 	} else {
 		//external port configuration feature is enabled by default in automotive profile
-		if (externalPortConfiguration == EXT_DISABLED) {
-			externalPortConfiguration = EXT_ENABLED;
+		if (extPortConfig.externalPortConfiguration == EXT_DISABLED) {
+			extPortConfig.externalPortConfiguration = EXT_ENABLED;
 		}
 	}
 
-	this->external_port_configuration = externalPortConfiguration;
-	this->automotive_profile = automotiveProfile;
-	this->transmit_announce = transmitAnnounce;
-	this->force_asCapable = forceAsCapable;
-	this->negotiate_sync_rate = negotiateSyncRate;
-	this->automotive_state = automotiveState;
-	this->automotive_test_mode = automotiveTestMode;
+	if (extPortConfig.externalPortConfiguration == EXT_DISABLED) {
+		extPortConfig.staticPortState = PTP_INITIALIZING;
+	}
+
+	this->external_port_configuration = extPortConfig.externalPortConfiguration;
+	this->static_port_state = extPortConfig.staticPortState;
+	this->automotive_profile = automotiveProfileConfig.automotiveProfile;
+	this->transmit_announce = automotiveProfileConfig.transmitAnnounce;
+	this->force_asCapable = automotiveProfileConfig.forceAsCapable;
+	this->negotiate_sync_rate = automotiveProfileConfig.negotiateSyncRate;
+	this->automotive_state = automotiveProfileConfig.automotiveState;
+	this->automotive_test_mode = automotiveProfileConfig.automotiveTestMode;
 
     /*TODO: Make the values below configurable*/
 	clock_quality.clockAccuracy = 0x22;
@@ -366,7 +371,7 @@ void IEEE1588Clock::setMasterOffset
 	_master_local_freq_offset = master_local_freq_offset;
 	_local_system_freq_offset = local_system_freq_offset;
 
-	if (port->getTestMode()) {
+	if (automotive_test_mode) {
 		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u",
 						master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
 	}
@@ -393,7 +398,7 @@ void IEEE1588Clock::setMasterOffset
 				/* Make sure that there are no transmit operations
 				   in progress */
 				getTxLockAll();
-				if (port->getTestMode()) {
+				if (automotive_test_mode) {
 					GPTP_LOG_STATUS("Adjust clock phase offset:%lld", -master_local_offset);
 				}
 				_timestamper->HWTimestamper_adjclockphase
@@ -421,7 +426,7 @@ void IEEE1588Clock::setMasterOffset
 		if( _ppm < LOWER_FREQ_LIMIT ) _ppm = LOWER_FREQ_LIMIT;
 		if( _ppm > UPPER_FREQ_LIMIT ) _ppm = UPPER_FREQ_LIMIT;
 		if( _timestamper ) {
-			if (port->getTestMode()) {
+			if (automotive_test_mode) {
 				GPTP_LOG_STATUS("Adjust clock rate ppm:%f", _ppm);
 			}
 			if( !_timestamper->HWTimestamper_adjclockrate( _ppm )) {
