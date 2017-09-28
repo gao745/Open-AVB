@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 					}
 				} else {
 					printf("external port configuration needs to be specified"
-						    "to either \"gm\" or \"slave\"\n");
+					        "to either \"gm\" or \"slave\"\n");
 					return 0;
 				}
 			}
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 				automotive_profile_config.automotiveTestMode = true;
 				if (!automotive_profile_config.automotiveProfile) {
 					printf("please use -V option to enable automotive profile first"
-						   "before you change the automotive profile configurations.\n");
+					       "before you change the automotive profile configurations.\n");
 					return 0;
 				}
 			}
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
 				automotive_profile_config.forceAsCapable = false;
 				if (!automotive_profile_config.automotiveProfile) {
 					printf("please use -V option to enable automotive profile first"
-						   "before you change the automotive profile configurations.\n");
+					       "before you change the automotive profile configurations.\n");
 					return 0;
 				}
 			}
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
 				automotive_profile_config.automotiveState = false;
 				if (!automotive_profile_config.automotiveProfile) {
 					printf("please use -V option to enable automotive profile first"
-						   "before you change the automotive profile configurations.\n");
+					       "before you change the automotive profile configurations.\n");
 					return 0;
 				}
 			}
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 				automotive_profile_config.negotiateSyncRate = false;
 				if (!automotive_profile_config.automotiveProfile) {
 					printf("please use -V option to enable automotive profile first"
-						   "before you change the automotive profile configurations.\n");
+					       "before you change the automotive profile configurations.\n");
 					return 0;
 				}
 			}
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 				automotive_profile_config.transmitAnnounce = true;
 				if (!automotive_profile_config.automotiveProfile) {
 					printf("please use -V option to enable automotive profile first"
-						   "before you change the automotive profile configurations.\n");
+					       "before you change the automotive profile configurations.\n");
 					return 0;
 				}
 			}
@@ -393,9 +393,9 @@ int main(int argc, char **argv)
 	}
 
 	pClock = new IEEE1588Clock( ext_port_config,
-								automotive_profile_config,
-								syntonize, priority1, timestamper,
-								timerq_factory, ipc, lock_factory );
+							    automotive_profile_config,
+							    syntonize, priority1, timestamper,
+							    timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
 		if( !restorefailed )

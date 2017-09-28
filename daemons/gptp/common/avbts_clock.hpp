@@ -418,7 +418,7 @@ public:
   * @return static_port_state
   */
   PortState getStaticPortState(void) {
-  	return external_port_configuration.staticPortState;
+    return external_port_configuration.staticPortState;
   }
 
   /**
@@ -426,7 +426,7 @@ public:
   * @return automotive_profile
   */
   bool getAutomotiveProfile(void) {
-		return automotive_profile_config.automotiveProfile;
+	  return automotive_profile_config.automotiveProfile;
   }
 
   /**
@@ -434,8 +434,8 @@ public:
   * @return transmit_announce attribute
   */
   bool getTransmitAnnounce(void) {
-		return automotive_profile_config.automotiveProfile
-						&& automotive_profile_config.transmitAnnounce;
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.transmitAnnounce;
   }
 
   /**
@@ -443,8 +443,8 @@ public:
   * @return asCapable_true attribute
   */
   bool getForceAsCapable(void) {
-		return automotive_profile_config.automotiveProfile
-						&& automotive_profile_config.forceAsCapable;
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.forceAsCapable;
   }
 
   /**
@@ -452,8 +452,8 @@ public:
   * @return negotiate_sync_rate attribute
   */
   bool getNegotiateSyncRate(void) {
-		return automotive_profile_config.automotiveProfile
-						&& automotive_profile_config.negotiateSyncRate;
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.negotiateSyncRate;
   }
 
   /**
@@ -461,8 +461,8 @@ public:
   * @return automotive_state attribute
   */
   bool getAutomotiveState(void) {
-		return automotive_profile_config.automotiveProfile
-						&& automotive_profile_config.automotiveState;
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.automotiveState;
   }
 
   /**
@@ -470,8 +470,8 @@ public:
   * @return automotive_test_mode attribute
   */
   bool getAutomotiveTestMode(void) {
-		return automotive_profile_config.automotiveProfile
-						&& automotive_profile_config.automotiveTestMode;
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.automotiveTestMode;
   }
 
   /**
