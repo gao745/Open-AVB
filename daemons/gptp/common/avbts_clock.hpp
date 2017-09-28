@@ -63,18 +63,18 @@
 
 /* @brief Structure for IEEE802.1as externalPortConfiguration */
 typedef struct {
-	ExtPortConfig externalPortConfiguration;
-	PortState staticPortState;
+	ExtPortConfig externalPortConfiguration; // IEEE 1588 defaultDS.externalPortConfiguration
+	PortState staticPortState; // Static port state configuration when externalPortConfiguration is enabled
 } IEEE1588ClockExtPortConfig_t;
 
 /* @brief Structure for automotive profile configuration*/
 typedef struct {
-	bool automotiveProfile;
-	bool transmitAnnounce;
-	bool forceAsCapable;
-	bool negotiateSyncRate;
-	bool automotiveState;
-	bool automotiveTestMode;
+	bool automotiveProfile; // Enable automoitve profile? This can be true when externalPortConfiguration is enabled
+	bool transmitAnnounce; // Transmit announce messages? This is set to false by default in automotive_profile
+	bool forceAsCapable; // AsCapable always be true? This is set to true by default in automotive_profile
+	bool negotiateSyncRate; // Enable sync rate negotiation? This is set tot true by default in automotive_profile
+	bool automotiveState; // Enable automotive states? This is set to true by default in automotive_profile
+	bool automotiveTestMode; // Transmit "test mode" message? This can be true by default in automotive_profile
 } IEEE1588ClockAutomotiveProfileConfig_t;
 
 /**
@@ -108,14 +108,8 @@ private:
 	bool grandmaster_is_boundary_clock;
 	uint8_t time_source;
 
-	ExtPortConfig external_port_configuration; // IEEE 1588 defaultDS.externalPortConfiguration
-	PortState static_port_state; // Static port state configuration when externalPortConfiguration is enabled.
-	bool automotive_profile; // Enable automoitve profile? This can be true when external_port_configuration is enabled.
-	bool transmit_announce; // Transmit announce messages? This is set to false by default in automotive_profile.
-	bool force_asCapable; // AsCapable always be true? This is set to true by default in automotive_profile.
-	bool negotiate_sync_rate; // Enable sync rate negotiation? This is set tot true by default in automotive_profile.
-	bool automotive_state; // Enable automotive states? This is set to true by default in automotive_profile.
-	bool automotive_test_mode; // Transmit "test mode" message? This can be true by default in automotive_profile.
+	IEEE1588ClockExtPortConfig_t external_port_configuration;
+	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
 
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
@@ -416,7 +410,7 @@ public:
   * @return defaultDS.externalPortConfiguration
   */
   ExtPortConfig getExternalPortConfiguration(void) {
-	 return external_port_configuration;
+	 return external_port_configuration.externalPortConfiguration;
   }
 
   /**
@@ -424,7 +418,7 @@ public:
   * @return static_port_state
   */
   PortState getStaticPortState(void) {
-  	return static_port_state;
+  	return external_port_configuration.staticPortState;
   }
 
   /**
@@ -432,7 +426,7 @@ public:
   * @return automotive_profile
   */
   bool getAutomotiveProfile(void) {
-	 return automotive_profile;
+		return automotive_profile_config.automotiveProfile;
   }
 
   /**
@@ -440,7 +434,8 @@ public:
   * @return transmit_announce attribute
   */
   bool getTransmitAnnounce(void) {
-	 return transmit_announce;
+		return automotive_profile_config.automotiveProfile
+						&& automotive_profile_config.transmitAnnounce;
   }
 
   /**
@@ -448,7 +443,8 @@ public:
   * @return asCapable_true attribute
   */
   bool getForceAsCapable(void) {
-	 return force_asCapable;
+		return automotive_profile_config.automotiveProfile
+						&& automotive_profile_config.forceAsCapable;
   }
 
   /**
@@ -456,7 +452,8 @@ public:
   * @return negotiate_sync_rate attribute
   */
   bool getNegotiateSyncRate(void) {
-	 return negotiate_sync_rate;
+		return automotive_profile_config.automotiveProfile
+						&& automotive_profile_config.negotiateSyncRate;
   }
 
   /**
@@ -464,7 +461,8 @@ public:
   * @return automotive_state attribute
   */
   bool getAutomotiveState(void) {
-	 return automotive_state;
+		return automotive_profile_config.automotiveProfile
+						&& automotive_profile_config.automotiveState;
   }
 
   /**
@@ -472,7 +470,8 @@ public:
   * @return automotive_test_mode attribute
   */
   bool getAutomotiveTestMode(void) {
-	 return automotive_test_mode;
+		return automotive_profile_config.automotiveProfile
+						&& automotive_profile_config.automotiveTestMode;
   }
 
   /**

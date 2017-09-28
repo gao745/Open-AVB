@@ -270,10 +270,12 @@ int main(int argc, char **argv)
 						ext_port_config.staticPortState = PTP_SLAVE;
 					} else {
 						printf("set external port configuration to be \"gm\" or \"slave\"\n");
+						return 0;
 					}
 				} else {
 					printf("external port configuration needs to be specified"
 						    "to either \"gm\" or \"slave\"\n");
+					return 0;
 				}
 			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
@@ -318,6 +320,13 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (automotive_profile_config.automotiveProfile
+		&& ext_port_config.externalPortConfiguration == EXT_DISABLED)
+	{
+		printf("externalPortConfiguration needs to be enabled in automotive profile\n");
+		return 0;
+	}
+
 	if (!input_delay)
 	{
 		phy_delay[0] = PHY_DELAY_GB_TX_I20;
@@ -360,7 +369,7 @@ int main(int argc, char **argv)
 
 	pClock = new IEEE1588Clock( ext_port_config,
 								automotive_profile_config,
-		                        syntonize, priority1, timestamper,
+								syntonize, priority1, timestamper,
 								timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
@@ -435,7 +444,7 @@ int main(int argc, char **argv)
 		if( !restorefailed ) {
 			restorefailed = !pPort->restoreSerializedState( restoredataptr, &restoredatacount );
 			GPTP_LOG_INFO("Persistent port data restored: asCapable:%d, port_state:%d, one_way_delay:%lld",
-						  pPort->getAsCapable(), pPort->getPortState(), pPort->getLinkDelay());
+						   pPort->getAsCapable(), pPort->getPortState(), pPort->getLinkDelay());
 		}
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
