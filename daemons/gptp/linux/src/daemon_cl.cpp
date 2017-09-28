@@ -393,9 +393,9 @@ int main(int argc, char **argv)
 	}
 
 	pClock = new IEEE1588Clock( ext_port_config,
-							    automotive_profile_config,
-							    syntonize, priority1, timestamper,
-							    timerq_factory, ipc, lock_factory );
+	                            automotive_profile_config,
+	                            syntonize, priority1, timestamper,
+	                            timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
 		if( !restorefailed )
