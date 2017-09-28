@@ -283,18 +283,43 @@ int main(int argc, char **argv)
 			}
 			else if (strcmp(argv[i] + 1, "ETE") == 0) {
 				automotive_profile_config.automotiveTestMode = true;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+						   "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "DC") == 0) {
 				automotive_profile_config.forceAsCapable = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+						   "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "DS") == 0) {
 				automotive_profile_config.automotiveState = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+						   "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "DR") == 0) {
 				automotive_profile_config.negotiateSyncRate = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+						   "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "ETX") == 0) {
 				automotive_profile_config.transmitAnnounce = true;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+						   "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
 				portInit.initialLogSyncInterval = atoi(argv[++i]);
