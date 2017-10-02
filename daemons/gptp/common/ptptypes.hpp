@@ -62,4 +62,12 @@ typedef enum {
 	PTP_LISTENING		//!< Port is in a PTP listening state. Currently not in use.
 } PortState;
 
+/**
+* ExtPortConfig enumeration
+*/
+typedef enum {
+	EXT_DISABLED = 0, //!< externalPortConfiguration is disabled
+	EXT_ENABLED = 1, //!< externalPortConfiguration is enabled
+} ExtPortConfig;
+
 #endif/*PTP_TYPES_HPP*/

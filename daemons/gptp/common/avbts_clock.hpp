@@ -61,6 +61,22 @@
    adjustment is performed */
 #define PHASE_ERROR_MAX_COUNT (6)
 
+/* @brief Structure for IEEE802.1as externalPortConfiguration */
+typedef struct {
+	ExtPortConfig externalPortConfiguration; // IEEE 1588 defaultDS.externalPortConfiguration
+	PortState staticPortState; // Static port state configuration when externalPortConfiguration is enabled
+} IEEE1588ClockExtPortConfig_t;
+
+/* @brief Structure for automotive profile configuration*/
+typedef struct {
+	bool automotiveProfile; // Enable automoitve profile? This can be true when externalPortConfiguration is enabled
+	bool transmitAnnounce; // Transmit announce messages? This is set to false by default in automotive_profile
+	bool forceAsCapable; // AsCapable always be true? This is set to true by default in automotive_profile
+	bool negotiateSyncRate; // Enable sync rate negotiation? This is set tot true by default in automotive_profile
+	bool automotiveState; // Enable automotive states? This is set to true by default in automotive_profile
+	bool automotiveTestMode; // Transmit "test mode" message? This can be true by default in automotive_profile
+} IEEE1588ClockAutomotiveProfileConfig_t;
+
 /**
  * @brief Provides the 1588 clock interface
  */
@@ -92,6 +108,9 @@ private:
 	bool grandmaster_is_boundary_clock;
 	uint8_t time_source;
 
+	IEEE1588ClockExtPortConfig_t external_port_configuration;
+	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
+
 	ClockIdentity LastEBestIdentity;
 	bool _syntonize;
 	bool _new_syntonization_set_point;
@@ -117,7 +136,6 @@ private:
 
 	OSTimerQueue *timerq;
 
-	bool forceOrdinarySlave;
 	FrequencyRatio _master_local_freq_offset;
 	FrequencyRatio _local_system_freq_offset;
 
@@ -157,7 +175,8 @@ private:
 public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
-   * @param forceOrdinarySlave Forces it to be an ordinary slave
+   * @param extPortConfig [in] Initialize externalPortConfiguration parameters.
+   * @param automotiveProfileConfig [in] Initialize automotive profile parameters.
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS Clause 10.3
    * @param timestamper [in] Provides an object for hardware timestamp
@@ -166,7 +185,9 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	  (bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+	  (IEEE1588ClockExtPortConfig_t extPortConfig,
+	   IEEE1588ClockAutomotiveProfileConfig_t automotiveProfileConfig,
+	   bool syntonize, uint8_t priority1,
 	   HWTimestamper *timestamper, OSTimerQueueFactory * timerq_factory,
 	   OS_IPC * ipc, OSLockFactory *lock_factory );
 
@@ -382,6 +403,75 @@ public:
   void setPriority2( unsigned char newPriority2 ) {
       /*TODO: add range check */
       priority2 = newPriority2;
+  }
+
+  /**
+  * @brief  Gets defaultDS.externalPortConfiguration
+  * @return defaultDS.externalPortConfiguration
+  */
+  ExtPortConfig getExternalPortConfiguration(void) {
+	 return external_port_configuration.externalPortConfiguration;
+  }
+
+  /**
+  * @brief  Gets static_port_state
+  * @return static_port_state
+  */
+  PortState getStaticPortState(void) {
+    return external_port_configuration.staticPortState;
+  }
+
+  /**
+  * @brief  Gets automotive_profile attribute
+  * @return automotive_profile
+  */
+  bool getAutomotiveProfile(void) {
+	  return automotive_profile_config.automotiveProfile;
+  }
+
+  /**
+  * @brief  Gets transmit_announce attribute
+  * @return transmit_announce attribute
+  */
+  bool getTransmitAnnounce(void) {
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.transmitAnnounce;
+  }
+
+  /**
+  * @brief  Gets asCapable_true attribute
+  * @return asCapable_true attribute
+  */
+  bool getForceAsCapable(void) {
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.forceAsCapable;
+  }
+
+  /**
+  * @brief  Gets negotiate_sync_rate attribute
+  * @return negotiate_sync_rate attribute
+  */
+  bool getNegotiateSyncRate(void) {
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.negotiateSyncRate;
+  }
+
+  /**
+  * @brief  Gets automotive_state attribute
+  * @return automotive_state attribute
+  */
+  bool getAutomotiveState(void) {
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.automotiveState;
+  }
+
+  /**
+  * @brief  Gets automotive_test_mode attribute
+  * @return automotive_test_mode attribute
+  */
+  bool getAutomotiveTestMode(void) {
+	  return automotive_profile_config.automotiveProfile
+	         && automotive_profile_config.automotiveTestMode;
   }
 
   /**
@@ -609,7 +699,6 @@ public:
 
 	  return true;
   }
-
 
   /**
    * @brief  Declares a friend instance of tick_handler method

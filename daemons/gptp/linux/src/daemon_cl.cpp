@@ -68,7 +68,9 @@ void print_usage( char *arg0 ) {
 			"%s <network interface> [-S] [-P] [-M <filename>] "
 			"[-G <group>] [-R <priority 1>] "
 			"[-D <gb_tx_delay,gb_rx_delay,mb_tx_delay,mb_rx_delay>] "
-			"[-T] [-L] [-E] [-GM] [-INITSYNC <value>] [-OPERSYNC <value>] "
+			"[-EP <port_state>] [-V]"
+			"[-ETE] [-DC] [-DS] [-DR] [-ETX]"
+			"[-INITSYNC <value>] [-OPERSYNC <value>] "
 			"[-INITPDELAY <value>] [-OPERPDELAY <value>] "
 			"[-F <path to gptp_cfg.ini file>] "
 			"\n",
@@ -81,11 +83,13 @@ void print_usage( char *arg0 ) {
 		  "\t-G <group> group id for shared memory\n"
 		  "\t-R <priority 1> priority 1 value\n"
 		  "\t-D Phy Delay <gb_tx_delay,gb_rx_delay,mb_tx_delay,mb_rx_delay>\n"
-		  "\t-T force master (ignored when Automotive Profile set)\n"
-		  "\t-L force slave (ignored when Automotive Profile set)\n"
-		  "\t-E enable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-EP <port_state> enable external port configuration to gm/slave\n"
 		  "\t-V enable AVnu Automotive Profile\n"
-		  "\t-GM set grandmaster for Automotive Profile\n"
+		  "\t-ETE enable test mode (as defined in AVnu automotive profile)\n"
+		  "\t-DC do not force asCapable always true (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DS disable automotive states (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-DR disable sync rate negotiation (valid when AVnu Automotive Profile is enabled)\n"
+		  "\t-ETX enable transmission of announce message (valid when AVnu Automotive Profile is enabled)\n"
 		  "\t-INITSYNC <value> initial sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-OPERSYNC <value> operational sync interval (Log base 2. 0 = 1 second)\n"
 		  "\t-INITPDELAY <value> initial pdelay interval (Log base 2. 0 = 1 second)\n"
@@ -109,8 +113,6 @@ int main(int argc, char **argv)
 	int i;
 	bool pps = false;
 	uint8_t priority1 = 248;
-	bool override_portstate = false;
-	PortState port_state = PTP_SLAVE;
 
 	char *restoredata = NULL;
 	char *restoredataptr = NULL;
@@ -147,9 +149,6 @@ int main(int argc, char **argv)
 	portInit.timestamper = NULL;
 	portInit.offset = 0;
 	portInit.net_label = NULL;
-	portInit.automotive_profile = false;
-	portInit.isGM = false;
-	portInit.testMode = false;
 	portInit.initialLogSyncInterval = LOG2_INTERVAL_INVALID;
 	portInit.initialLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
 	portInit.operLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
@@ -158,6 +157,15 @@ int main(int argc, char **argv)
 	portInit.thread_factory = NULL;
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
+
+	IEEE1588ClockExtPortConfig_t ext_port_config = {EXT_DISABLED, PTP_INITIALIZING};
+	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
+	automotive_profile_config.automotiveProfile = false;
+	automotive_profile_config.transmitAnnounce = false;
+	automotive_profile_config.forceAsCapable = true;
+	automotive_profile_config.negotiateSyncRate = true;
+	automotive_profile_config.automotiveState = true;
+	automotive_profile_config.automotiveTestMode = false;
 
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
@@ -184,14 +192,6 @@ int main(int argc, char **argv)
 			if( strcmp(argv[i] + 1,  "S") == 0 ) {
 				// Get syntonize directive from command line
 				syntonize = true;
-			}
-			else if( strcmp(argv[i] + 1,  "T" ) == 0 ) {
-				override_portstate = true;
-				port_state = PTP_MASTER;
-			}
-			else if( strcmp(argv[i] + 1,  "L" ) == 0 ) {
-				override_portstate = true;
-				port_state = PTP_SLAVE;
 			}
 			else if( strcmp(argv[i] + 1,  "M" )  == 0 ) {
 				// Open file
@@ -260,14 +260,66 @@ int main(int argc, char **argv)
 					return 0;
 				}
 			}
+			else if (strcmp(argv[i] + 1, "EP") == 0) {
+				if (i + 1 < argc) {
+					if (strcmp(argv[i + 1], "gm") == 0) {
+						ext_port_config.externalPortConfiguration = EXT_ENABLED;
+						ext_port_config.staticPortState = PTP_MASTER;
+					} else if (strcmp(argv[i + 1], "slave == 0")) {
+						ext_port_config.externalPortConfiguration = EXT_ENABLED;
+						ext_port_config.staticPortState = PTP_SLAVE;
+					} else {
+						printf("set external port configuration to be \"gm\" or \"slave\"\n");
+						return 0;
+					}
+				} else {
+					printf("external port configuration needs to be specified"
+					        "to either \"gm\" or \"slave\"\n");
+					return 0;
+				}
+			}
 			else if (strcmp(argv[i] + 1, "V") == 0) {
-				portInit.automotive_profile = true;
+				automotive_profile_config.automotiveProfile = true;
 			}
-			else if (strcmp(argv[i] + 1, "GM") == 0) {
-				portInit.isGM = true;
+			else if (strcmp(argv[i] + 1, "ETE") == 0) {
+				automotive_profile_config.automotiveTestMode = true;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+					       "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
-			else if (strcmp(argv[i] + 1, "E") == 0) {
-				portInit.testMode = true;
+			else if (strcmp(argv[i] + 1, "DC") == 0) {
+				automotive_profile_config.forceAsCapable = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+					       "before you change the automotive profile configurations.\n");
+					return 0;
+				}
+			}
+			else if (strcmp(argv[i] + 1, "DS") == 0) {
+				automotive_profile_config.automotiveState = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+					       "before you change the automotive profile configurations.\n");
+					return 0;
+				}
+			}
+			else if (strcmp(argv[i] + 1, "DR") == 0) {
+				automotive_profile_config.negotiateSyncRate = false;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+					       "before you change the automotive profile configurations.\n");
+					return 0;
+				}
+			}
+			else if (strcmp(argv[i] + 1, "ETX") == 0) {
+				automotive_profile_config.transmitAnnounce = true;
+				if (!automotive_profile_config.automotiveProfile) {
+					printf("please use -V option to enable automotive profile first"
+					       "before you change the automotive profile configurations.\n");
+					return 0;
+				}
 			}
 			else if (strcmp(argv[i] + 1, "INITSYNC") == 0) {
 				portInit.initialLogSyncInterval = atoi(argv[++i]);
@@ -291,6 +343,13 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+	}
+
+	if (automotive_profile_config.automotiveProfile
+		&& ext_port_config.externalPortConfiguration == EXT_DISABLED)
+	{
+		printf("externalPortConfiguration needs to be enabled in automotive profile\n");
+		return 0;
 	}
 
 	if (!input_delay)
@@ -333,8 +392,10 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	pClock = new IEEE1588Clock( false, syntonize, priority1, timestamper,
-								timerq_factory, ipc, lock_factory );
+	pClock = new IEEE1588Clock( ext_port_config,
+	                            automotive_profile_config,
+	                            syntonize, priority1, timestamper,
+	                            timerq_factory, ipc, lock_factory );
 
 	if( restoredataptr != NULL ) {
 		if( !restorefailed )
@@ -408,23 +469,13 @@ int main(int argc, char **argv)
 		if( !restorefailed ) {
 			restorefailed = !pPort->restoreSerializedState( restoredataptr, &restoredatacount );
 			GPTP_LOG_INFO("Persistent port data restored: asCapable:%d, port_state:%d, one_way_delay:%lld",
-						  pPort->getAsCapable(), pPort->getPortState(), pPort->getLinkDelay());
+						   pPort->getAsCapable(), pPort->getPortState(), pPort->getLinkDelay());
 		}
 		restoredataptr = ((char *)restoredata) + (restoredatalength - restoredatacount);
 	}
 
-	if (portInit.automotive_profile) {
-		if (portInit.isGM) {
-			port_state = PTP_MASTER;
-		}
-		else {
-			port_state = PTP_SLAVE;
-		}
-		override_portstate = true;
-	}
-
-	if( override_portstate ) {
-		pPort->setPortState( port_state );
+	if( ext_port_config.externalPortConfiguration == EXT_ENABLED ) {
+		pPort->setPortState( ext_port_config.staticPortState );
 	}
 
 	// Start PPS if requested
