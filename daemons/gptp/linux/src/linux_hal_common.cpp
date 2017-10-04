@@ -430,15 +430,26 @@ void *LinuxTimerQueueHandler( void *arg ) {
 	sigemptyset( &waitfor );
 
 	while( !timerq->stop ) {
-		siginfo_t info;
+		siginfo_t info = { 0 };
 		LinuxTimerQueueMap_t::iterator iter;
 		sigaddset( &waitfor, SIGUSR1 );
-		if( sigtimedwait( &waitfor, &info, &timeout ) == -1 ) {
-			if( errno == EAGAIN ) continue;
-			else break;
+		int result = 0;
+		do {
+			result = sigtimedwait( &waitfor, &info, &timeout );
+		} while( result == -1 && ( errno == EAGAIN || errno == EINTR ) );
+
+		if( result == -1 ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: sigtimedwait() errno: %s(%d).",
+				strerror( errno ), errno );
+			_exit(EXIT_FAILURE);
 		}
-		if( timerq->lock->lock() != oslock_ok ) {
-			break;
+
+		int lockStatus = 0;
+		if( (lockStatus = timerq->lock->lock()) != oslock_ok ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->lock(): error %d",
+				 lockStatus );
+			// Ensure the daemon exits on fatal error
+			_exit(EXIT_FAILURE);
 		}
 
 		iter = timerq->timerQueueMap.find(info.si_value.sival_int);
@@ -452,8 +463,13 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			timer_delete(arg->timer_handle);
 			delete arg;
 		}
-		if( timerq->lock->unlock() != oslock_ok ) {
-			break;
+
+		lockStatus = 0;
+		if( (lockStatus = timerq->lock->unlock()) != oslock_ok ) {
+			GPTP_LOG_ERROR( "LinuxTimerQueueHandler: timerq->lock->unlock(): error %d",
+				 lockStatus );
+			// Ensure the daemon exits on fatal error
+			_exit(EXIT_FAILURE);
 		}
 	}
 
