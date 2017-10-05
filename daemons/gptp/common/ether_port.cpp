@@ -156,7 +156,7 @@ EtherPort::EtherPort( PortInit_t *portInit ) :
 
 bool EtherPort::_init_port( void )
 {
-	pdelay_rx_lock = lock_factory->createLock(oslock_recursive);
+	last_pdelay_lock = lock_factory->createLock(oslock_recursive);
 	port_tx_lock = lock_factory->createLock(oslock_recursive);
 
 	pDelayIntervalTimerLock = lock_factory->createLock(oslock_recursive);
@@ -506,6 +506,11 @@ bool EtherPort::_processEvent( Event e )
 		{
 			Timestamp req_timestamp;
 
+			if (getLastPDelayLock() != true) {
+				GPTP_LOG_ERROR("Failed to get last PDelay lock before sending a PDelayReq");
+				break;
+			}
+
 			PTPMessagePathDelayReq *pdelay_req =
 			    new PTPMessagePathDelayReq(this);
 			PortIdentity dest_id;
@@ -551,6 +556,8 @@ bool EtherPort::_processEvent( Event e )
 					interval : EVENT_TIMER_GRANULARITY;
 				startPDelayIntervalTimer(interval);
 			}
+
+			putLastPDelayLock();
 		}
 		break;
 	case SYNC_INTERVAL_TIMEOUT_EXPIRES:
@@ -624,7 +631,10 @@ bool EtherPort::_processEvent( Event e )
 		break;
 	case PDELAY_DEFERRED_PROCESSING:
 		GPTP_LOG_DEBUG("PDELAY_DEFERRED_PROCESSING occured");
-		pdelay_rx_lock->lock();
+		if (getLastPDelayLock() != true) {
+			GPTP_LOG_ERROR("Failed to get last PDelay lock before processing a deferred PDelay Follow Up");
+			break;
+		}
 		if (last_pdelay_resp_fwup == NULL) {
 			GPTP_LOG_ERROR("PDelay Response Followup is NULL!");
 			abort();
@@ -634,7 +644,7 @@ bool EtherPort::_processEvent( Event e )
 			delete last_pdelay_resp_fwup;
 			this->setLastPDelayRespFollowUp(NULL);
 		}
-		pdelay_rx_lock->unlock();
+		putLastPDelayLock();
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
 		if (!automotive_profile) {
