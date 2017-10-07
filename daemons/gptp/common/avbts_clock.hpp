@@ -434,8 +434,7 @@ public:
   * @return transmit_announce attribute
   */
   bool getTransmitAnnounce(void) {
-	  return automotive_profile_config.automotiveProfile
-	         && automotive_profile_config.transmitAnnounce;
+	  return automotive_profile_config.transmitAnnounce;
   }
 
   /**
