@@ -69,7 +69,7 @@ typedef struct {
 
 /* @brief Structure for automotive profile configuration*/
 typedef struct {
-	bool automotiveProfile; // Enable automoitve profile? This can be true when externalPortConfiguration is enabled
+	bool automotiveProfile; // Enable automotive profile? This can be true when externalPortConfiguration is enabled
 	bool transmitAnnounce; // Transmit announce messages? This is set to false by default in automotive_profile
 	bool forceAsCapable; // AsCapable always be true? This is set to true by default in automotive_profile
 	bool negotiateSyncRate; // Enable sync rate negotiation? This is set tot true by default in automotive_profile
@@ -425,7 +425,7 @@ public:
   * @brief  Gets automotive_profile attribute
   * @return automotive_profile
   */
-  bool getAutomotiveProfile(void) {
+  bool automotiveProfileEnabled(void) {
 	  return automotive_profile_config.automotiveProfile;
   }
 
@@ -433,7 +433,7 @@ public:
   * @brief  Gets transmit_announce attribute
   * @return transmit_announce attribute
   */
-  bool getTransmitAnnounce(void) {
+  bool transmitAnnounceEnabled(void) {
 	  return automotive_profile_config.transmitAnnounce;
   }
 
@@ -441,36 +441,32 @@ public:
   * @brief  Gets asCapable_true attribute
   * @return asCapable_true attribute
   */
-  bool getForceAsCapable(void) {
-	  return automotive_profile_config.automotiveProfile
-	         && automotive_profile_config.forceAsCapable;
+  bool forceAsCapable(void) {
+	  return automotive_profile_config.forceAsCapable;
   }
 
   /**
   * @brief  Gets negotiate_sync_rate attribute
   * @return negotiate_sync_rate attribute
   */
-  bool getNegotiateSyncRate(void) {
-	  return automotive_profile_config.automotiveProfile
-	         && automotive_profile_config.negotiateSyncRate;
+  bool negotiateSyncRateEnabled(void) {
+	  return automotive_profile_config.negotiateSyncRate;
   }
 
   /**
   * @brief  Gets automotive_state attribute
   * @return automotive_state attribute
   */
-  bool getAutomotiveState(void) {
-	  return automotive_profile_config.automotiveProfile
-	         && automotive_profile_config.automotiveState;
+  bool automotiveStationStatesEnabled(void) {
+	  return automotive_profile_config.automotiveState;
   }
 
   /**
   * @brief  Gets automotive_test_mode attribute
   * @return automotive_test_mode attribute
   */
-  bool getAutomotiveTestMode(void) {
-	  return automotive_profile_config.automotiveProfile
-	         && automotive_profile_config.automotiveTestMode;
+  bool automotiveTestModeEnabled(void) {
+	  return automotive_profile_config.automotiveTestMode;
   }
 
   /**

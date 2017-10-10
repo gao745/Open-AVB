@@ -157,7 +157,7 @@ PTPMessageCommon *buildPTPMessage
 		GPTP_LOG_EXCEPTION("*** Received message with unsupported transportSpecific type=%d", transportSpecific);
 		goto abort;
 	}
- 
+
 	switch (messageType) {
 	case SYNC_MESSAGE:
 
@@ -1655,13 +1655,14 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 		}
 	}
 	if( !port->setLinkDelay( link_delay ) ) {
-		if (!port->getClock()->getForceAsCapable()
-			&& (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
+		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapable())
+				&& (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
 			GPTP_LOG_STATUS("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
 			port->setAsCapable( false );
 		}
 	} else {
-		if (!port->getClock()->getForceAsCapable() && !port->getAsCapable() ) {
+		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapable())
+				&& !port->getAsCapable() ) {
 			GPTP_LOG_STATUS("Link delay %ld within neighborPropDelayThresh; setting AsCapable", link_delay);
 			port->setAsCapable( true );
 		}
@@ -1843,7 +1844,7 @@ void PTPMessageSignalling::processMessage(IEEE1588Port * port)
 		port->startSyncIntervalTimer(waitTime);
 	}
 
-	if (!port->getClock()->getAutomotiveProfile()) {
+	if (!port->getClock()->automotiveProfileEnabled()) {
 		if (announceInterval == PTPMessageSignalling::sigMsgInterval_Initial) {
 			// TODO: Needs implementation
 			GPTP_LOG_WARNING("Signal received to set Announce message to initial interval: Not implemented");

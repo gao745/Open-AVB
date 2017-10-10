@@ -368,7 +368,7 @@ void IEEE1588Clock::setMasterOffset
 	_master_local_freq_offset = master_local_freq_offset;
 	_local_system_freq_offset = local_system_freq_offset;
 
-	if (getAutomotiveTestMode()) {
+	if (automotiveTestModeEnabled()) {
 		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u",
 						master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
 	}
@@ -395,7 +395,7 @@ void IEEE1588Clock::setMasterOffset
 				/* Make sure that there are no transmit operations
 				   in progress */
 				getTxLockAll();
-				if (getAutomotiveTestMode()) {
+				if (automotiveTestModeEnabled()) {
 					GPTP_LOG_STATUS("Adjust clock phase offset:%lld", -master_local_offset);
 				}
 				_timestamper->HWTimestamper_adjclockphase
@@ -423,7 +423,7 @@ void IEEE1588Clock::setMasterOffset
 		if( _ppm < LOWER_FREQ_LIMIT ) _ppm = LOWER_FREQ_LIMIT;
 		if( _ppm > UPPER_FREQ_LIMIT ) _ppm = UPPER_FREQ_LIMIT;
 		if( _timestamper ) {
-			if (getAutomotiveTestMode()) {
+			if (automotiveTestModeEnabled()) {
 				GPTP_LOG_STATUS("Adjust clock rate ppm:%f", _ppm);
 			}
 			if( !_timestamper->HWTimestamper_adjclockrate( _ppm )) {
