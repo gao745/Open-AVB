@@ -441,7 +441,7 @@ public:
   * @brief  Gets asCapable_true attribute
   * @return asCapable_true attribute
   */
-  bool forceAsCapable(void) {
+  bool forceAsCapableEnabled(void) {
 	  return automotive_profile_config.forceAsCapable;
   }
 

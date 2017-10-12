@@ -103,7 +103,7 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 	operLogSyncInterval = portInit->operLogSyncInterval;
 
 	if (clock->automotiveProfileEnabled()) {
-		if(clock->forceAsCapable()) {
+		if(clock->forceAsCapableEnabled()) {
 			asCapable = true;
 
 			if (initialLogSyncInterval == LOG2_INTERVAL_INVALID)
@@ -124,7 +124,7 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 				operLogPdelayReqInterval = 0;      // 1 second
 			if (operLogSyncInterval == LOG2_INTERVAL_INVALID)
 				operLogSyncInterval = 0;           // 1 second
-      }
+		}
 	}
 	else {
 		asCapable = false;
@@ -192,6 +192,9 @@ IEEE1588Port::IEEE1588Port(IEEE1588PortInit_t *portInit)
 
 	if (clock->automotiveProfileEnabled() &&
 		 clock->automotiveStationStatesEnabled()) {
+		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+			GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+		}
 		if (clock->getStaticPortState() == PTP_MASTER) {
 			avbSyncState = 1;
 		} else {
@@ -260,7 +263,7 @@ bool IEEE1588Port::init_port(int delay[4])
 
 void IEEE1588Port::startPDelay() {
 	if(!pdelayHalted()) {
-		if (clock->automotiveProfileEnabled() && clock->forceAsCapable()) {
+		if (clock->automotiveProfileEnabled() && clock->forceAsCapableEnabled()) {
 			if (log_min_mean_pdelay_req_interval != PTPMessageSignalling::sigMsgInterval_NoSend) {
 				long long unsigned int waitTime;
 				waitTime = ((long long) (pow((double)2, log_min_mean_pdelay_req_interval) * 1000000000.0));
@@ -286,6 +289,9 @@ void IEEE1588Port::stopPDelay() {
 void IEEE1588Port::startSyncRateIntervalTimer() {
 	if (clock->automotiveProfileEnabled() && clock->negotiateSyncRateEnabled()) {
 		sync_rate_interval_timer_started = true;
+		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+			GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+		}
 		if (clock->getStaticPortState() == PTP_MASTER) {
 			// GM will wait up to 8  seconds for signaling rate
 			// TODO: This isn't according to spec but set because it is believed that some slave devices aren't signalling
@@ -309,17 +315,21 @@ void IEEE1588Port::syncDone()
 {
 	GPTP_LOG_VERBOSE("Sync complete");
 	if (clock->automotiveProfileEnabled() &&
-		 clock->automotiveStationStatesEnabled() &&
-		 clock->getStaticPortState() == PTP_SLAVE) {
-		if (avbSyncState > 0) {
-			avbSyncState--;
-			if (avbSyncState == 0) {
-				setStationState(STATION_STATE_AVB_SYNC);
-				if (clock->automotiveTestModeEnabled()) {
-					APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-					if (testStatusMsg) {
-						testStatusMsg->sendPort(this);
-						delete testStatusMsg;
+		 clock->automotiveStationStatesEnabled()) {
+		if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+			GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+		}
+		if(clock->getStaticPortState() == PTP_SLAVE) {
+			if (avbSyncState > 0) {
+				avbSyncState--;
+				if (avbSyncState == 0) {
+					setStationState(STATION_STATE_AVB_SYNC);
+					if (clock->automotiveTestModeEnabled()) {
+						APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+						if (testStatusMsg) {
+							testStatusMsg->sendPort(this);
+							delete testStatusMsg;
+						}
 					}
 				}
 			}
@@ -572,11 +582,9 @@ void IEEE1588Port::processEvent(Event e)
 			Event e4 = NULL_EVENT;
 
 			// TODO:Start PDelay only if the link is up.
-			if (!clock->automotiveProfileEnabled() || !clock->forceAsCapable()) {
-				if (port_state != PTP_SLAVE && port_state != PTP_MASTER) {
+			if (!clock->automotiveProfileEnabled() || !clock->forceAsCapableEnabled()) {
 					GPTP_LOG_STATUS("Starting PDelay");
 					startPDelay();
-				}
 			}
 			else {
 				GPTP_LOG_STATUS("Starting PDelay");
@@ -635,9 +643,12 @@ void IEEE1588Port::processEvent(Event e)
 				}
 			}
 
+			if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+				GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+			}
 			if (clock->getStaticPortState() == PTP_SLAVE &&
 				 clock->negotiateSyncRateEnabled()) {
-					// Send an initial signalling message
+				// Send an initial signalling message
 				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
 				if (sigMsg) {
 					sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, log_mean_sync_interval, PTPMessageSignalling::sigMsgInterval_NoSend);
@@ -776,7 +787,7 @@ void IEEE1588Port::processEvent(Event e)
 		}
 
 		if (clock->automotiveProfileEnabled()) {
-			if (clock->forceAsCapable()) {
+			if (clock->forceAsCapableEnabled()) {
 				asCapable = true;
 			}
 
@@ -784,6 +795,9 @@ void IEEE1588Port::processEvent(Event e)
 				setStationState(STATION_STATE_ETHERNET_READY);
 				// Start AVB SYNC at 2. It will decrement after each sync. When it reaches 0 the Test Status message
 				// can be sent
+				if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+					GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+				}
 				if (clock->getStaticPortState() == PTP_MASTER) {
 					avbSyncState = 1;
 				}
@@ -803,6 +817,9 @@ void IEEE1588Port::processEvent(Event e)
 			log_mean_announce_interval = 0;
 			log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
 
+			if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+				GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+			}
 			if (clock->getStaticPortState() == PTP_SLAVE
 				&& clock->negotiateSyncRateEnabled()) {
 				// Send an initial signaling message
@@ -831,14 +848,14 @@ void IEEE1588Port::processEvent(Event e)
 
 	case LINKDOWN:
 		stopPDelay();
-		if (clock->automotiveProfileEnabled() && clock->forceAsCapable()) {
+		if (clock->automotiveProfileEnabled() && clock->forceAsCapableEnabled()) {
 			GPTP_LOG_EXCEPTION("LINK DOWN");
 		}
 		else {
 			setAsCapable(false);
 			GPTP_LOG_STATUS("LINK DOWN");
 		}
-		if (clock->automotiveProfileEnabled() && clock->automotiveTestModeEnabled()) {
+		if (clock->automotiveTestModeEnabled()) {
 			linkDownCount++;
 		}
 		break;
@@ -1063,18 +1080,22 @@ void IEEE1588Port::processEvent(Event e)
 				GPTP_LOG_DEBUG("Sent SYNC message");
 
 				if (clock->automotiveProfileEnabled() &&
-					 clock->getStaticPortState() == PTP_MASTER &&
 					 clock->automotiveStationStatesEnabled()) {
-					if (avbSyncState > 0) {
-						avbSyncState--;
-						if (avbSyncState == 0) {
-							// Send Avnu Automotive Profile status message
-							setStationState(STATION_STATE_AVB_SYNC);
-							if (clock->automotiveTestModeEnabled()) {
-								APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-								if (testStatusMsg) {
-									testStatusMsg->sendPort(this);
-									delete testStatusMsg;
+					if (clock->getExternalPortConfiguration() == EXT_DISABLED) {
+						GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
+					}
+					if (clock->getStaticPortState() == PTP_MASTER) {
+						if (avbSyncState > 0) {
+							avbSyncState--;
+							if (avbSyncState == 0) {
+								// Send Avnu Automotive Profile status message
+								setStationState(STATION_STATE_AVB_SYNC);
+								if (clock->automotiveTestModeEnabled()) {
+									APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+									if (testStatusMsg) {
+										testStatusMsg->sendPort(this);
+										delete testStatusMsg;
+									}
 								}
 							}
 						}
@@ -1195,7 +1216,7 @@ void IEEE1588Port::processEvent(Event e)
 		break;
 	case FAULT_DETECTED:
 		GPTP_LOG_ERROR("Received FAULT_DETECTED event");
-		if (!clock->automotiveProfileEnabled() || !clock->forceAsCapable()) {
+		if (!clock->automotiveProfileEnabled() || !clock->forceAsCapableEnabled()) {
 			setAsCapable(false);
 		}
 		break;
@@ -1217,7 +1238,7 @@ void IEEE1588Port::processEvent(Event e)
 		putLastPDelayLock();
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
-		if (!clock->automotiveProfileEnabled() || !clock->forceAsCapable()) {
+		if (!clock->automotiveProfileEnabled() || !clock->forceAsCapableEnabled()) {
 			GPTP_LOG_DEBUG("PDelay Response Receipt Timeout");
 			if ( getAsCapable() || !getAsCapableEvaluated() ) {
 				GPTP_LOG_STATUS("Did not receive a valid PDelay Response before the timeout. Not AsCapable");
@@ -1253,7 +1274,7 @@ void IEEE1588Port::processEvent(Event e)
 				sendSignalMessage = true;
 			}
 
-			if (sendSignalMessage && clock->getStaticPortState() != PTP_MASTER) {
+			if (sendSignalMessage && port_state != PTP_MASTER) {
 				if (clock->automotiveProfileEnabled()) {
 					if (clock->negotiateSyncRateEnabled()) {
 						// Send operational signalling message
@@ -1393,7 +1414,8 @@ void IEEE1588Port::becomeMaster( bool annc ) {
 	// Stop sync receipt timeout timer
 	stopSyncReceiptTimer();
 
-	if (clock->getStaticPortState() == PTP_MASTER) {
+	if (clock->getExternalPortConfiguration() == EXT_ENABLED &&
+		 clock->getStaticPortState() == PTP_MASTER) {
 		// Set grandmaster info to myself
 		ClockIdentity clock_identity;
 		unsigned char priority1;
@@ -1436,7 +1458,7 @@ void IEEE1588Port::becomeSlave( bool restart_syntonization ) {
 		   (ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER*
 			(unsigned long long)
 			(pow((double)2,getAnnounceInterval())*1000000000.0)));
-   	} else {
+		} else {
 		// When externalPortConfiguration is enabled as a slave, we might receive
 		// grandmaster info in the future from an Announce message, but that will
 		// not occur if the grandmaster does not transmit Announce

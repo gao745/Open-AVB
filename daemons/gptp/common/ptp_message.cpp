@@ -1655,13 +1655,13 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 		}
 	}
 	if( !port->setLinkDelay( link_delay ) ) {
-		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapable())
+		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapableEnabled())
 				&& (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
 			GPTP_LOG_STATUS("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
 			port->setAsCapable( false );
 		}
 	} else {
-		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapable())
+		if((!port->getClock()->automotiveProfileEnabled() || !port->getClock()->forceAsCapableEnabled())
 				&& !port->getAsCapable() ) {
 			GPTP_LOG_STATUS("Link delay %ld within neighborPropDelayThresh; setting AsCapable", link_delay);
 			port->setAsCapable( true );
