@@ -297,6 +297,8 @@ void *LinuxTimerQueueHandler( void *arg ) {
 		siginfo_t info = { 0 };
 		LinuxTimerQueueMap_t::iterator iter;
 		sigaddset( &waitfor, SIGUSR1 );
+		ostimerq_handler localArgFunc = NULL;
+		event_descriptor_t localArgInnerArg = {};
 		int result = 0;
 		do {
 			result = sigtimedwait( &waitfor, &info, &timeout );
@@ -318,9 +320,10 @@ void *LinuxTimerQueueHandler( void *arg ) {
 
 		iter = timerq->timerQueueMap.find(info.si_value.sival_int);
 		if( iter != timerq->timerQueueMap.end() ) {
-		    struct LinuxTimerQueueActionArg *arg = iter->second;
+			struct LinuxTimerQueueActionArg *arg = iter->second;
+			localArgFunc = arg->func;
+			memcpy( &localArgInnerArg, arg->inner_arg, sizeof( localArgInnerArg ) );
 			timerq->timerQueueMap.erase(iter);
-			timerq->LinuxTimerQueueAction( arg );
 			if( arg->rm ) {
 				delete arg->inner_arg;
 			}
@@ -335,6 +338,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			// Ensure the daemon exits on fatal error
 			_exit(EXIT_FAILURE);
 		}
+		localArgFunc(&localArgInnerArg);
 	}
 
 	return NULL;
@@ -342,8 +346,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 
 void LinuxTimerQueue::LinuxTimerQueueAction( LinuxTimerQueueActionArg *arg ) {
 	arg->func( arg->inner_arg );
-
-    return;
+	return;
 }
 
 OSTimerQueue *LinuxTimerQueueFactory::createOSTimerQueue
