@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 PTPMessageCommon::PTPMessageCommon(IEEE1588Port * port)
 {
@@ -157,7 +158,7 @@ PTPMessageCommon *buildPTPMessage
 		GPTP_LOG_EXCEPTION("*** Received message with unsupported transportSpecific type=%d", transportSpecific);
 		goto abort;
 	}
- 
+
 	switch (messageType) {
 	case SYNC_MESSAGE:
 
@@ -1545,6 +1546,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage(IEEE1588Port * port)
 		goto abort;
 	}
 
+   sleep( 1 );
 	port->getClock()->deleteEventTimerLocked
 		(port, PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES);
 
