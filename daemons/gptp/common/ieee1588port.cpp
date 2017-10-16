@@ -583,8 +583,10 @@ void IEEE1588Port::processEvent(Event e)
 
 			// TODO:Start PDelay only if the link is up.
 			if (!clock->automotiveProfileEnabled() || !clock->forceAsCapableEnabled()) {
+				if (port_state != PTP_SLAVE && port_state != PTP_MASTER) {
 					GPTP_LOG_STATUS("Starting PDelay");
 					startPDelay();
+				}
 			}
 			else {
 				GPTP_LOG_STATUS("Starting PDelay");
@@ -779,6 +781,7 @@ void IEEE1588Port::processEvent(Event e)
 		stopPDelay();
 		haltPdelay(false);
 		startPDelay();
+
 		if (clock->automotiveProfileEnabled()) {
 			GPTP_LOG_EXCEPTION("LINKUP");
 		}
