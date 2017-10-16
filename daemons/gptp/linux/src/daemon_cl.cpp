@@ -158,15 +158,6 @@ int main(int argc, char **argv)
 	portInit.timer_factory = NULL;
 	portInit.lock_factory = NULL;
 
-	IEEE1588ClockExtPortConfig_t ext_port_config = {EXT_DISABLED, PTP_INITIALIZING};
-	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
-	automotive_profile_config.automotiveProfile = false;
-	automotive_profile_config.transmitAnnounce = false;
-	automotive_profile_config.forceAsCapable = true;
-	automotive_profile_config.negotiateSyncRate = true;
-	automotive_profile_config.automotiveState = true;
-	automotive_profile_config.automotiveTestMode = false;
-
 	LinuxNetworkInterfaceFactory *default_factory =
 		new LinuxNetworkInterfaceFactory;
 	OSNetworkInterfaceFactory::registerFactory
@@ -185,7 +176,35 @@ int main(int argc, char **argv)
 	}
 	ifname = new InterfaceName( argv[1], strlen(argv[1]) );
 
-	/* Process optional arguments */
+	IEEE1588ClockExtPortConfig_t ext_port_config = {EXT_DISABLED, PTP_INITIALIZING};
+	IEEE1588ClockAutomotiveProfileConfig_t automotive_profile_config;
+
+	automotive_profile_config.automotiveProfile = false;
+
+	/* Check arguments and determine if automotive profile is enabled */
+	for( i = 2; i < argc; ++i ) {
+		if (strcmp(argv[i] + 1, "V") == 0) {
+			automotive_profile_config.automotiveProfile = true;
+		}
+	}
+
+	if (automotive_profile_config.automotiveProfile) {
+		// set defaults to enable standard automotive profile features
+		// these may be overridden by the optional arguments
+		automotive_profile_config.forceAsCapable = true;
+		automotive_profile_config.automotiveState = true;
+		automotive_profile_config.transmitAnnounce = false;
+	} else {
+		automotive_profile_config.forceAsCapable = false;
+		automotive_profile_config.automotiveState = false;
+		automotive_profile_config.transmitAnnounce = true;
+	}
+	// negotiateSyncRate defaults to true in both profiles
+	automotive_profile_config.negotiateSyncRate = true;
+	// let the user explicitly enable test mode
+	automotive_profile_config.automotiveTestMode = false;
+
+	/* Process remaining optional arguments */
 	for( i = 2; i < argc; ++i ) {
 
 		if( argv[i][0] == '-' ) {
@@ -278,16 +297,8 @@ int main(int argc, char **argv)
 					return 0;
 				}
 			}
-			else if (strcmp(argv[i] + 1, "V") == 0) {
-				automotive_profile_config.automotiveProfile = true;
-			}
 			else if (strcmp(argv[i] + 1, "ETE") == 0) {
 				automotive_profile_config.automotiveTestMode = true;
-				if (!automotive_profile_config.automotiveProfile) {
-					printf("please use -V option to enable automotive profile first"
-					       "before you change the automotive profile configurations.\n");
-					return 0;
-				}
 			}
 			else if (strcmp(argv[i] + 1, "DC") == 0) {
 				automotive_profile_config.forceAsCapable = false;

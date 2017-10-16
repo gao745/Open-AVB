@@ -89,27 +89,6 @@ IEEE1588Clock::IEEE1588Clock
 
 	number_ports = 0;
 
-	if (!automotiveProfileConfig.automotiveProfile) {
-		//The following boolean options are only configurable when automotive profile is enabled
-		automotiveProfileConfig.transmitAnnounce = true;
-		automotiveProfileConfig.forceAsCapable = false;
-		automotiveProfileConfig.negotiateSyncRate = false;
-		automotiveProfileConfig.automotiveState = false;
-		automotiveProfileConfig.automotiveTestMode = false;
-	} else {
-		//external port configuration feature is enabled by default in automotive profile
-		if (extPortConfig.externalPortConfiguration == EXT_DISABLED) {
-			GPTP_LOG_ERROR("Automotive profile enabled but externalPortConfiguration is disabled by user");
-			GPTP_LOG_STATUS("Enable externalPortConfiguration and set staticPortState to PTP_SLAVE by default");
-			extPortConfig.externalPortConfiguration = EXT_ENABLED;
-			extPortConfig.staticPortState = PTP_SLAVE;
-		}
-	}
-
-	if (extPortConfig.externalPortConfiguration == EXT_DISABLED) {
-		extPortConfig.staticPortState = PTP_INITIALIZING;
-	}
-
 	this->external_port_configuration = extPortConfig;
 	this->automotive_profile_config = automotiveProfileConfig;
 
@@ -368,7 +347,7 @@ void IEEE1588Clock::setMasterOffset
 	_master_local_freq_offset = master_local_freq_offset;
 	_local_system_freq_offset = local_system_freq_offset;
 
-	if (getAutomotiveTestMode()) {
+	if (automotiveTestModeEnabled()) {
 		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u",
 						master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
 	}
@@ -395,7 +374,7 @@ void IEEE1588Clock::setMasterOffset
 				/* Make sure that there are no transmit operations
 				   in progress */
 				getTxLockAll();
-				if (getAutomotiveTestMode()) {
+				if (automotiveTestModeEnabled()) {
 					GPTP_LOG_STATUS("Adjust clock phase offset:%lld", -master_local_offset);
 				}
 				_timestamper->HWTimestamper_adjclockphase
@@ -423,7 +402,7 @@ void IEEE1588Clock::setMasterOffset
 		if( _ppm < LOWER_FREQ_LIMIT ) _ppm = LOWER_FREQ_LIMIT;
 		if( _ppm > UPPER_FREQ_LIMIT ) _ppm = UPPER_FREQ_LIMIT;
 		if( _timestamper ) {
-			if (getAutomotiveTestMode()) {
+			if (automotiveTestModeEnabled()) {
 				GPTP_LOG_STATUS("Adjust clock rate ppm:%f", _ppm);
 			}
 			if( !_timestamper->HWTimestamper_adjclockrate( _ppm )) {
