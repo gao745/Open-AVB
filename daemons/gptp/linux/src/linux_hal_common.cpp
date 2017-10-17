@@ -296,6 +296,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 	while( !timerq->stop ) {
 		siginfo_t info = { 0 };
 		LinuxTimerQueueMap_t::iterator iter;
+		struct LinuxTimerQueueActionArg *actionArgPtr = NULL;
 		sigaddset( &waitfor, SIGUSR1 );
 		int result = 0;
 		do {
@@ -318,14 +319,11 @@ void *LinuxTimerQueueHandler( void *arg ) {
 
 		iter = timerq->timerQueueMap.find(info.si_value.sival_int);
 		if( iter != timerq->timerQueueMap.end() ) {
-		    struct LinuxTimerQueueActionArg *arg = iter->second;
+			// The timer queue lock should only be held to protect operations on
+			// the queue. Remove the timer action from the queue and release the
+			// lock before processing the action.
+			actionArgPtr = iter->second;
 			timerq->timerQueueMap.erase(iter);
-			timerq->LinuxTimerQueueAction( arg );
-			if( arg->rm ) {
-				delete arg->inner_arg;
-			}
-			timer_delete(arg->timer_handle);
-			delete arg;
 		}
 
 		lockStatus = 0;
@@ -335,6 +333,16 @@ void *LinuxTimerQueueHandler( void *arg ) {
 			// Ensure the daemon exits on fatal error
 			_exit(EXIT_FAILURE);
 		}
+
+		if( actionArgPtr != NULL ) {
+			timerq->LinuxTimerQueueAction( actionArgPtr );
+			if( actionArgPtr->rm ) {
+				delete actionArgPtr->inner_arg;
+			}
+			timer_delete(actionArgPtr->timer_handle);
+			delete actionArgPtr;
+			actionArgPtr = NULL;
+		}
 	}
 
 	return NULL;
@@ -342,8 +350,7 @@ void *LinuxTimerQueueHandler( void *arg ) {
 
 void LinuxTimerQueue::LinuxTimerQueueAction( LinuxTimerQueueActionArg *arg ) {
 	arg->func( arg->inner_arg );
-
-    return;
+	return;
 }
 
 OSTimerQueue *LinuxTimerQueueFactory::createOSTimerQueue
