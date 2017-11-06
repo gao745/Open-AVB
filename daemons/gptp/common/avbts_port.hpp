@@ -539,20 +539,7 @@ class IEEE1588Port {
 	 * @param  ascap flag to be set. If FALSE, marks peer_offset_init as false.
 	 * @return void
 	 */
-	void setAsCapable(bool ascap) {
-		if (ascap != asCapable) {
-			GPTP_LOG_STATUS("AsCapable: %s",
-					ascap == true ? "Enabled" : "Disabled");
-		}
-		if(!ascap){
-			_peer_offset_init = false;
-		}
-		asCapable = ascap;
-
-		// Assumes that a call to setAsCapable() means that 802.1AS capability
-		// has been evaluated.
-		asCapableEvaluated = true;
-	}
+	void setAsCapable(bool ascap);
 
 	/**
 	 * @brief  Reinitializes the asCapable variables
@@ -1434,8 +1421,8 @@ class IEEE1588Port {
 	}
 
 	/**
-	 * @brief  Sets the Station State for the Test Status message 
-	 * @param  StationState_t [in] The station state  
+	 * @brief  Sets the Station State for the Test Status message
+	 * @param  StationState_t [in] The station state
 	 * @return none
 	 */
 	void setStationState(StationState_t _stationState) {
