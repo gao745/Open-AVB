@@ -349,6 +349,51 @@ void IEEE1588Port::syncDone()
 	}
 }
 
+void IEEE1588Port::setAsCapable(bool ascap) {
+	if (ascap != asCapable) {
+		GPTP_LOG_STATUS("AsCapable: %s",
+			ascap == true ? "Enabled" : "Disabled");
+	}
+	if(!ascap){
+		_peer_offset_init = false;
+	}
+	asCapable = ascap;
+
+	Timestamp system_time;
+	Timestamp device_time;
+	FrequencyRatio local_system_freq_offset;
+	int64_t local_system_offset;
+	uint32_t local_clock, nominal_clock_rate;
+
+	getDeviceTime
+		(system_time, device_time, local_clock, nominal_clock_rate);
+
+	GPTP_LOG_VERBOSE
+		("port::setAsCapable(): System time: %u,%u Device Time: %u,%u",
+		 system_time.seconds_ls, system_time.nanoseconds,
+		 device_time.seconds_ls, device_time.nanoseconds);
+
+	local_system_offset =
+		 TIMESTAMP_TO_NS(system_time) -
+		 TIMESTAMP_TO_NS(device_time);
+	local_system_freq_offset =
+		 clock->calcLocalSystemClockRateDifference
+			( device_time, system_time );
+	// Calling setMasterOffset to allow the IPC update. Since this call is made
+	// with the master_local_offset = 0 and  master_local_freq_offset = 1,
+	// there are no updates made to frequency values.
+	static const int64_t master_local_offset = 0;
+	static const FrequencyRatio master_local_freq_offset = 1;
+	clock->setMasterOffset
+	  (this, master_local_offset, device_time, master_local_freq_offset, local_system_offset,
+		system_time, local_system_freq_offset, sync_count,
+		pdelay_count, port_state, asCapable );
+
+	// Assumes that a call to setAsCapable() means that 802.1AS capability
+	// has been evaluated.
+	asCapableEvaluated = true;
+}
+
 bool IEEE1588Port::serializeState( void *buf, off_t *count ) {
 	bool ret = true;
 
