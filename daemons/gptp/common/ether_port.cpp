@@ -325,6 +325,7 @@ bool EtherPort::_processEvent( Event e )
 	switch (e) {
 	case POWERUP:
 	case INITIALIZE:
+		// TODO: Start PDelay only if the link is up
 		if (!automotive_profile) {
 			if ( getPortState() != PTP_SLAVE &&
 			     getPortState() != PTP_MASTER )
