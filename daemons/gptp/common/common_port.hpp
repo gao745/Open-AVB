@@ -332,6 +332,7 @@ private:
 	Timestamp _peer_offset_ts_mine;
 	bool _peer_offset_init;
 	bool asCapable;
+	bool asCapableEvaluated;
 	unsigned sync_count;  /* 0 for master, increment for each sync
 			       * received as slave */
 	unsigned pdelay_count;
@@ -894,6 +895,19 @@ public:
 			_peer_offset_init = false;
 		}
 		asCapable = ascap;
+
+		// Assumes that a call to setAsCapable() means that 802.1AS capability
+		// has been evaluated.
+		asCapableEvaluated = true;
+	}
+
+	/**
+	 * @brief  Reinitializes the asCapable variables
+	 * @return void
+	 */
+	void reinitializeAsCapable() {
+		asCapable = false;
+		asCapableEvaluated = false;
 	}
 
 	/**
@@ -904,6 +918,12 @@ public:
 	{
 		return( asCapable );
 	}
+
+	/**
+	 * @brief  Checks if 802.1AS capability has been evaluated at least once
+	 * @return asCapable set at least once.
+	 */
+	bool getAsCapableEvaluated() { return( asCapableEvaluated ); }
 
 	/**
 	 * @brief  Gets the Peer rate offset. Used to calculate neighbor
@@ -964,6 +984,7 @@ public:
 	 * @return void
 	 */
 	void restartPDelay() {
+		reinitializeAsCapable();
 		_peer_offset_init = false;
 	}
 

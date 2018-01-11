@@ -180,6 +180,7 @@ void EtherPort::startPDelay()
 		}
 		else {
 			pdelay_started = true;
+			reinitializeAsCapable();
 			startPDelayIntervalTimer(32000000);
 		}
 	}
@@ -324,6 +325,7 @@ bool EtherPort::_processEvent( Event e )
 	switch (e) {
 	case POWERUP:
 	case INITIALIZE:
+		// TODO: Start PDelay only if the link is up
 		if (!automotive_profile) {
 			if ( getPortState() != PTP_SLAVE &&
 			     getPortState() != PTP_MASTER )
@@ -648,7 +650,10 @@ bool EtherPort::_processEvent( Event e )
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
 		if (!automotive_profile) {
-			GPTP_LOG_EXCEPTION("PDelay Response Receipt Timeout");
+			GPTP_LOG_DEBUG("PDelay Response Receipt Timeout");
+			if ( getAsCapable() || !getAsCapableEvaluated() ) {
+				GPTP_LOG_STATUS("Did not receive a valid PDelay Response before the timeout. Not AsCapable");
+			}
 			setAsCapable(false);
 		}
 		setPdelayCount( 0 );
