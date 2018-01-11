@@ -141,7 +141,6 @@ private:
 
 	OSTimerQueue *timerq;
 
-	bool forceOrdinarySlave;
 	FrequencyRatio _master_local_freq_offset;
 	FrequencyRatio _local_system_freq_offset;
 
@@ -182,7 +181,6 @@ private:
 public:
   /**
    * @brief Instantiates a IEEE 1588 Clock
-   * @param forceOrdinarySlave Forces it to be an ordinary slave
    * @param syntonize if TRUE, clock will syntonize to the master clock
    * @param priority1 It is used in the execution of BCMA. See IEEE 802.1AS-2011 Clause 10.3
    * @param timerq_factory [in] Provides a factory object for creating timer queues (managing events)
@@ -190,7 +188,7 @@ public:
    * @param lock_factory [in] Provides a factory object for creating locking a locking mechanism
    */
   IEEE1588Clock
-	  (bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+	  (bool syntonize, uint8_t priority1,
 	   OSTimerQueueFactory * timerq_factory, OS_IPC * ipc,
 	   OSLockFactory *lock_factory );
 
@@ -638,7 +636,6 @@ public:
 
 	  return true;
   }
-
 
   /**
    * @brief  Declares a friend instance of tick_handler method

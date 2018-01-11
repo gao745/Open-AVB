@@ -85,9 +85,7 @@ EtherPort::~EtherPort()
 EtherPort::EtherPort( PortInit_t *portInit ) :
 	CommonPort( portInit )
 {
-	automotive_profile = portInit->automotive_profile;
 	linkUp = portInit->linkUp;
-	setTestMode( portInit->testMode );
 
 	pdelay_sequence_id = 0;
 
@@ -102,30 +100,20 @@ EtherPort::EtherPort( PortInit_t *portInit ) :
 	operLogPdelayReqInterval = portInit->operLogPdelayReqInterval;
 	operLogSyncInterval = portInit->operLogSyncInterval;
 
-	if (automotive_profile) {
-		setAsCapable( true );
-
+	if( negotiateAutomotiveSyncRateEnabled() ) {
 		if (getInitSyncInterval() == LOG2_INTERVAL_INVALID)
 			setInitSyncInterval( -5 );     // 31.25 ms
-		if (initialLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
-			initialLogPdelayReqInterval = 0;  // 1 second
-		if (operLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
-			operLogPdelayReqInterval = 0;      // 1 second
-		if (operLogSyncInterval == LOG2_INTERVAL_INVALID)
-			operLogSyncInterval = 0;           // 1 second
-	}
-	else {
-		setAsCapable( false );
-
+	} else {
 		if ( getInitSyncInterval() == LOG2_INTERVAL_INVALID )
 			setInitSyncInterval( -3 );       // 125 ms
-		if (initialLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
-			initialLogPdelayReqInterval = 0;   // 1 second
-		if (operLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
-			operLogPdelayReqInterval = 0;      // 1 second
-		if (operLogSyncInterval == LOG2_INTERVAL_INVALID)
-			operLogSyncInterval = 0;           // 1 second
 	}
+
+	if (initialLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
+		initialLogPdelayReqInterval = 0;   // 1 second
+	if (operLogPdelayReqInterval == LOG2_INTERVAL_INVALID)
+		operLogPdelayReqInterval = 0;      // 1 second
+	if (operLogSyncInterval == LOG2_INTERVAL_INVALID)
+		operLogSyncInterval = 0;           // 1 second
 
 	/*TODO: Add intervals below to a config interface*/
 	log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
@@ -138,14 +126,16 @@ EtherPort::EtherPort( PortInit_t *portInit ) :
 	setPdelayCount(0);
 	setSyncCount(0);
 
-	if (automotive_profile) {
-		if (isGM) {
+	// TODO: Investigate if getPortState() can be used instead so that the
+	// stationStates feature isn't dependent on using externalPortConfiguration.
+	if (automotiveStationStatesEnabled()) {
+		if (externalPortConfigurationEnabled() && getStaticPortState() == PTP_MASTER) {
 			avbSyncState = 1;
 		}
 		else {
 			avbSyncState = 2;
 		}
-		if (getTestMode())
+		if (testModeEnabled())
 		{
 			linkUpCount = 1;  // TODO : really should check the current linkup status http://stackoverflow.com/questions/15723061/how-to-check-if-interface-is-up
 			linkDownCount = 0;
@@ -169,7 +159,7 @@ bool EtherPort::_init_port( void )
 void EtherPort::startPDelay()
 {
 	if(!pdelayHalted()) {
-		if (automotive_profile) {
+		if (forceAsCapableEnabled()) {
 			if (log_min_mean_pdelay_req_interval != PTPMessageSignalling::sigMsgInterval_NoSend) {
 				long long unsigned int waitTime;
 				waitTime = ((long long) (pow((double)2, log_min_mean_pdelay_req_interval) * 1000000000.0));
@@ -195,9 +185,9 @@ void EtherPort::stopPDelay()
 
 void EtherPort::startSyncRateIntervalTimer()
 {
-	if (automotive_profile) {
+	if (negotiateAutomotiveSyncRateEnabled()) {
 		sync_rate_interval_timer_started = true;
-		if (isGM) {
+		if (getPortState() == PTP_MASTER) {
 			// GM will wait up to 8  seconds for signaling rate
 			// TODO: This isn't according to spec but set because it is believed that some slave devices aren't signalling
 			//  to reduce the rate
@@ -326,7 +316,7 @@ bool EtherPort::_processEvent( Event e )
 	case POWERUP:
 	case INITIALIZE:
 		// TODO: Start PDelay only if the link is up
-		if (!automotive_profile) {
+		if (!forceAsCapableEnabled()) {
 			if ( getPortState() != PTP_SLAVE &&
 			     getPortState() != PTP_MASTER )
 			{
@@ -335,6 +325,7 @@ bool EtherPort::_processEvent( Event e )
 			}
 		}
 		else {
+			GPTP_LOG_STATUS("Starting PDelay");
 			startPDelay();
 		}
 
@@ -356,39 +347,47 @@ bool EtherPort::_processEvent( Event e )
 
 		port_ready_condition->wait();
 
-		if (automotive_profile) {
+		if( automotiveStationStatesEnabled() ) {
 			setStationState(STATION_STATE_ETHERNET_READY);
-			if (getTestMode())
-			{
-				APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-				if (testStatusMsg) {
-					testStatusMsg->sendPort(this);
-					delete testStatusMsg;
-				}
-			}
-			if (!isGM) {
-				// Send an initial signalling message
-				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
-				if (sigMsg) {
-					sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoSend);
-					sigMsg->sendPort(this, NULL);
-					delete sigMsg;
-				}
+		}
 
-				startSyncReceiptTimer((unsigned long long)
-					 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
-					  ((double) pow((double)2, getSyncInterval()) *
-					   1000000000.0)));
+		if (testModeEnabled())
+		{
+			APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+			if (testStatusMsg) {
+				testStatusMsg->sendPort(this);
+				delete testStatusMsg;
 			}
+		}
+
+		// TODO: Test if the regular port state can be used instead of the static
+		// port state. If it's truly static, then it should already be set. Also,
+		// that would make it possible to use negotiateAutomotiveSyncRate without
+		// externalPortConfiguration enabled.
+		if( negotiateAutomotiveSyncRateEnabled() &&
+		    externalPortConfigurationEnabled() &&
+			 getStaticPortState() == PTP_SLAVE ) {
+			// Send an initial signalling message
+			PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
+			if (sigMsg) {
+				sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoSend);
+				sigMsg->sendPort(this, NULL);
+				delete sigMsg;
+			}
+
+			startSyncReceiptTimer((unsigned long long)
+				 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
+				  ((double) pow((double)2, getSyncInterval()) *
+					1000000000.0)));
 		}
 
 		ret = true;
 		break;
 	case STATE_CHANGE_EVENT:
-		// If the automotive profile is enabled, handle the event by
+		// If externalPortConfiguration is enabled, handle the event by
 		// doing nothing and returning true, preventing the default
 		// action from executing
-		if( automotive_profile )
+		if( externalPortConfigurationEnabled() )
 			ret = true;
 		else
 			ret = false;
@@ -398,12 +397,7 @@ bool EtherPort::_processEvent( Event e )
 		stopPDelay();
 		haltPdelay(false);
 		startPDelay();
-		if (automotive_profile) {
-			GPTP_LOG_EXCEPTION("LINKUP");
-		}
-		else {
-			GPTP_LOG_STATUS("LINKUP");
-		}
+		GPTP_LOG_STATUS("LINKUP");
 
 		if( clock->getPriority1() == 255 || getPortState() == PTP_SLAVE ) {
 			becomeSlave( true );
@@ -414,55 +408,54 @@ bool EtherPort::_processEvent( Event e )
 				ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER * pow(2.0, getAnnounceInterval()) * 1000000000.0);
 		}
 
-		if (automotive_profile) {
-			setAsCapable( true );
-
+		if( automotiveStationStatesEnabled() ) {
 			setStationState(STATION_STATE_ETHERNET_READY);
-			if (getTestMode())
-			{
-				APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
-				if (testStatusMsg) {
-					testStatusMsg->sendPort(this);
-					delete testStatusMsg;
-				}
-			}
-
-			resetInitSyncInterval();
-			setAnnounceInterval( 0 );
-			log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
-
-			if (!isGM) {
-				// Send an initial signaling message
-				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
-				if (sigMsg) {
-					sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoSend);
-					sigMsg->sendPort(this, NULL);
-					delete sigMsg;
-				}
-
-				startSyncReceiptTimer((unsigned long long)
-					 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
-					  ((double) pow((double)2, getSyncInterval()) *
-					   1000000000.0)));
-			}
-
-			// Reset Sync count and pdelay count
-			setPdelayCount(0);
-			setSyncCount(0);
-
 			// Start AVB SYNC at 2. It will decrement after each sync. When it reaches 0 the Test Status message
 			// can be sent
-			if (isGM) {
+			if ( getPortState() == PTP_MASTER ) {
 				avbSyncState = 1;
 			}
 			else {
 				avbSyncState = 2;
 			}
+		}
 
-			if (getTestMode())
-			{
-				linkUpCount++;
+		if (testModeEnabled())
+		{
+			APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
+			if (testStatusMsg) {
+				testStatusMsg->sendPort(this);
+				delete testStatusMsg;
 			}
+		}
+
+		// Reset send intervals to initial values
+		resetInitSyncInterval();
+		setAnnounceInterval( 0 );
+		log_min_mean_pdelay_req_interval = initialLogPdelayReqInterval;
+
+		if( negotiateAutomotiveSyncRateEnabled() && getPortState() == PTP_SLAVE ) {
+			// Send an initial signaling message
+			PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
+			if (sigMsg) {
+				sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoSend, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoSend);
+				sigMsg->sendPort(this, NULL);
+				delete sigMsg;
+			}
+
+			startSyncReceiptTimer((unsigned long long)
+				 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
+				  ((double) pow((double)2, getSyncInterval()) *
+					1000000000.0)));
+		}
+
+		// Reset Sync count and pdelay count
+		setPdelayCount(0);
+		setSyncCount(0);
+
+		if (testModeEnabled())
+		{
+			linkUpCount++;
 		}
 		this->timestamper_reset();
 
@@ -470,14 +463,12 @@ bool EtherPort::_processEvent( Event e )
 		break;
 	case LINKDOWN:
 		stopPDelay();
-		if (automotive_profile) {
-			GPTP_LOG_EXCEPTION("LINK DOWN");
-		}
-		else {
+		GPTP_LOG_STATUS("LINK DOWN");
+
+		if( !forceAsCapableEnabled() ) {
 			setAsCapable(false);
-			GPTP_LOG_STATUS("LINK DOWN");
 		}
-		if (getTestMode())
+		if (testModeEnabled())
 		{
 			linkDownCount++;
 		}
@@ -486,23 +477,27 @@ bool EtherPort::_processEvent( Event e )
 		break;
 	case ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES:
 	case SYNC_RECEIPT_TIMEOUT_EXPIRES:
-		if( !automotive_profile )
+		if( !externalPortConfigurationEnabled() )
 		{
 			ret = false;
 			break;
-		}
+		} else {
+			// If externalPortConfiguration is enabled, just reset the sync
+			// receipt timer.
+			// TODO: Investigate not even starting this time if
+			// externalPortConfiguration is enabled so gptp doesn't have to ignore
+			// and reset it constantly.
+			if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES) {
+				GPTP_LOG_EXCEPTION("SYNC receipt timeout");
 
-		// Automotive Profile specific action
-		if (e == SYNC_RECEIPT_TIMEOUT_EXPIRES) {
-			GPTP_LOG_EXCEPTION("SYNC receipt timeout");
-
-			startSyncReceiptTimer((unsigned long long)
-					      (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
-					       ((double) pow((double)2, getSyncInterval()) *
-						1000000000.0)));
+				startSyncReceiptTimer((unsigned long long)
+								(SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
+								 ((double) pow((double)2, getSyncInterval()) *
+							1000000000.0)));
+			}
+			ret = true;
+			break;
 		}
-		ret = true;
-		break;
 	case PDELAY_INTERVAL_TIMEOUT_EXPIRES:
 		GPTP_LOG_DEBUG("PDELAY_INTERVAL_TIMEOUT_EXPIRES occured");
 		{
@@ -577,7 +572,7 @@ bool EtherPort::_processEvent( Event e )
 			tx_succeed = sync->sendPort(this, NULL);
 			GPTP_LOG_DEBUG("Sent SYNC message");
 
-			if ( automotive_profile &&
+			if ( automotiveStationStatesEnabled() &&
 			     getPortState() == PTP_MASTER )
 			{
 				if (avbSyncState > 0) {
@@ -585,7 +580,7 @@ bool EtherPort::_processEvent( Event e )
 					if (avbSyncState == 0) {
 						// Send Avnu Automotive Profile status message
 						setStationState(STATION_STATE_AVB_SYNC);
-						if (getTestMode()) {
+						if (testModeEnabled()) {
 							APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
 							if (testStatusMsg) {
 								testStatusMsg->sendPort(this);
@@ -627,7 +622,7 @@ bool EtherPort::_processEvent( Event e )
 		break;
 	case FAULT_DETECTED:
 		GPTP_LOG_ERROR("Received FAULT_DETECTED event");
-		if (!automotive_profile) {
+		if (!forceAsCapableEnabled()) {
 			setAsCapable(false);
 		}
 		break;
@@ -649,7 +644,7 @@ bool EtherPort::_processEvent( Event e )
 		putLastPDelayLock();
 		break;
 	case PDELAY_RESP_RECEIPT_TIMEOUT_EXPIRES:
-		if (!automotive_profile) {
+		if (!forceAsCapableEnabled()) {
 			GPTP_LOG_DEBUG("PDelay Response Receipt Timeout");
 			if ( getAsCapable() || !getAsCapableEvaluated() ) {
 				GPTP_LOG_STATUS("Did not receive a valid PDelay Response before the timeout. Not AsCapable");
@@ -676,38 +671,37 @@ bool EtherPort::_processEvent( Event e )
 
 			sync_rate_interval_timer_started = false;
 
-			bool sendSignalMessage = false;
+			bool intervalUpdated = false;
 			if ( getSyncInterval() != operLogSyncInterval )
 			{
 				setSyncInterval( operLogSyncInterval );
-				sendSignalMessage = true;
+				intervalUpdated = true;
 			}
 
 			if (log_min_mean_pdelay_req_interval != operLogPdelayReqInterval) {
 				log_min_mean_pdelay_req_interval = operLogPdelayReqInterval;
-				sendSignalMessage = true;
+				intervalUpdated = true;
 			}
 
-			if (sendSignalMessage) {
-				if (!isGM) {
+			if (intervalUpdated && getPortState() == PTP_SLAVE) {
 				// Send operational signalling message
-					PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
-					if (sigMsg) {
-						if (automotive_profile)
-							sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoChange);
-						else
-							sigMsg->setintervals(log_min_mean_pdelay_req_interval, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoChange);
-						sigMsg->sendPort(this, NULL);
-						delete sigMsg;
+				PTPMessageSignalling *sigMsg = new PTPMessageSignalling(this);
+				if (sigMsg) {
+					if (negotiateAutomotiveSyncRateEnabled()) {
+						sigMsg->setintervals(PTPMessageSignalling::sigMsgInterval_NoChange, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoChange);
+					} else {
+						sigMsg->setintervals(log_min_mean_pdelay_req_interval, getSyncInterval(), PTPMessageSignalling::sigMsgInterval_NoChange);
 					}
+					sigMsg->sendPort(this, NULL);
+					delete sigMsg;
+				}
 
-					startSyncReceiptTimer((unsigned long long)
-						 (SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
-						  ((double) pow((double)2, getSyncInterval()) *
-						   1000000000.0)));
+				startSyncReceiptTimer((unsigned long long)
+					(SYNC_RECEIPT_TIMEOUT_MULTIPLIER *
+					 ((double) pow((double)2, getSyncInterval()) *
+					  1000000000.0)));
 				}
 			}
-		}
 
 		break;
 	default:
@@ -729,15 +723,34 @@ void EtherPort::recoverPort( void )
 void EtherPort::becomeMaster( bool annc ) {
 	setPortState( PTP_MASTER );
 	// Stop announce receipt timeout timer
-	clock->deleteEventTimerLocked( this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES );
+	if( transmitAnnounceEnabled() ) {
+		clock->deleteEventTimerLocked( this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES );
+	}
 
 	// Stop sync receipt timeout timer
 	stopSyncReceiptTimer();
 
-	if( annc ) {
-		if (!automotive_profile) {
-			startAnnounce();
-		}
+	if( externalPortConfigurationEnabled() &&
+		 getStaticPortState() == PTP_MASTER ) {
+		// Set grandmaster info to myself
+		ClockIdentity clock_identity;
+		unsigned char priority1;
+		unsigned char priority2;
+		ClockQuality clock_quality;
+
+		clock_identity = getClock()->getClockIdentity();
+		getClock()->setGrandmasterClockIdentity(clock_identity);
+		priority1 = getClock()->getPriority1();
+		getClock()->setGrandmasterPriority1(priority1);
+		priority2 = getClock()->getPriority2();
+		getClock()->setGrandmasterPriority2(priority2);
+		clock_quality = getClock()->getClockQuality();
+		getClock()->setGrandmasterClockQuality(clock_quality);
+	}
+
+	// TOOD: Is the annc parameter needed anymore?
+	if( annc && transmitAnnounceEnabled()) {
+		startAnnounce();
 	}
 	startSyncIntervalTimer(16000000);
 	GPTP_LOG_STATUS("Switching to Master" );
@@ -753,12 +766,42 @@ void EtherPort::becomeSlave( bool restart_syntonization ) {
 
 	setPortState( PTP_SLAVE );
 
-	if (!automotive_profile) {
+	if( !externalPortConfigurationEnabled() ) {
 		clock->addEventTimerLocked
 		  (this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES,
 		   (ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER*
 			(unsigned long long)
 			(pow((double)2,getAnnounceInterval())*1000000000.0)));
+	} else {
+		// When externalPortConfiguration is enabled as a slave, we might receive
+		// grandmaster info in the future from an Announce message, but that will
+		// not occur if the grandmaster does not transmit Announce
+		// (e.g. transmitAnnounce=false). Therefore, we need to initialize the
+		// parentDS.grandmaster members as follows:
+		//- If there a value for "unknown", use that, otherwise
+		//  - If the member indicates whether this is the best GM,
+		//      use a value that represents best GM.
+		//  - If the member represents quality,
+		//      use the worst value that is conformant, since we don't know.
+		ClockIdentity clock_identity;
+		ClockQuality clock_quality;
+
+		// The default constructor for ClockIdentity uses all-zero.
+		// For 1588 and 802.1AS, all-zero is a special value that is
+		// invalid/unknown. The only other value we could use is all-one,
+		// but since that can also mean "all clocks", it is not appropriate.
+		getClock()->setGrandmasterClockIdentity(clock_identity);
+		// Using zero for the priorities indicates that the remote GM is the
+		// best, which is true since we are externally configuring it to be GM.
+		getClock()->setGrandmasterPriority1(0);
+		getClock()->setGrandmasterPriority2(0);
+		// 802.1AS-2011 8.6.2.2, value for unknown
+		clock_quality.cq_class = 248;
+		// 802.1AS-2011 8.6.2.3, value for unknown
+		clock_quality.clockAccuracy = 0xFE;
+		// 802.1AS-2011 8.6.2.3, value for unknown, and also worst conformant
+		clock_quality.offsetScaledLogVariance = 0x4100;
+		getClock()->setGrandmasterClockQuality(clock_quality);
 	}
 
 	GPTP_LOG_STATUS("Switching to Slave" );
@@ -847,12 +890,12 @@ void EtherPort::startPDelayIntervalTimer
 void EtherPort::syncDone() {
 	GPTP_LOG_VERBOSE("Sync complete");
 
-	if (automotive_profile && getPortState() == PTP_SLAVE) {
+	if (automotiveStationStatesEnabled() && getPortState() == PTP_SLAVE) {
 		if (avbSyncState > 0) {
 			avbSyncState--;
 			if (avbSyncState == 0) {
 				setStationState(STATION_STATE_AVB_SYNC);
-				if (getTestMode()) {
+				if (testModeEnabled()) {
 					APMessageTestStatus *testStatusMsg =
 						new APMessageTestStatus(this);
 					if (testStatusMsg) {
@@ -864,7 +907,7 @@ void EtherPort::syncDone() {
 		}
 	}
 
-	if (automotive_profile) {
+	if (negotiateAutomotiveSyncRateEnabled()) {
 		if (!sync_rate_interval_timer_started) {
 			if ( getSyncInterval() != operLogSyncInterval )
 			{

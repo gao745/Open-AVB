@@ -104,13 +104,9 @@ class EtherPort : public CommonPort
 	uint16_t last_invalid_seqid;
 
 	/* Automotive Profile : Static variables */
-	// port_state : already defined as port_state
-	bool isGM;
-	// asCapable : already defined as asCapable
 	signed char operLogPdelayReqInterval;
 	signed char operLogSyncInterval;
 	signed char initialLogPdelayReqInterval;
-	bool automotive_profile;
 
 	// Test Status variables
 	uint32_t linkUpCount;
@@ -199,12 +195,6 @@ protected:
 	 * @return void
 	 */
 	void syncDone();
-
-	/**
-	 * @brief  Gets the AVnu automotive profile flag
-	 * @return automotive_profile flag
-	 */
-	bool getAutomotiveProfile() { return( automotive_profile ); }
 
 	/**
 	 * @brief Destroys a EtherPort
