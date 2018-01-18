@@ -954,23 +954,7 @@ public:
 	 * false.
 	 * @return void
 	 */
-	void setAsCapable(bool ascap)
-	{
-		if ( ascap != asCapable ) {
-			GPTP_LOG_STATUS
-				("AsCapable: %s", ascap == true
-				 ? "Enabled" : "Disabled");
-		}
-		if( !ascap )
-		{
-			_peer_offset_init = false;
-		}
-		asCapable = ascap;
-
-		// Assumes that a call to setAsCapable() means that 802.1AS capability
-		// has been evaluated.
-		asCapableEvaluated = true;
-	}
+	void setAsCapable(bool ascap);
 
 	/**
 	 * @brief  Reinitializes the asCapable variables

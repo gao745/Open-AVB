@@ -792,6 +792,60 @@ void CommonPort::getDeviceTime
 	return;
 }
 
+void CommonPort::setAsCapable(bool ascap)
+{
+	if ( ascap != asCapable ) {
+		GPTP_LOG_STATUS
+			("AsCapable: %s", ascap == true
+			 ? "Enabled" : "Disabled");
+	}
+	if( !ascap )
+	{
+		_peer_offset_init = false;
+	}
+	asCapable = ascap;
+
+	// Assumes that a call to setAsCapable() means that 802.1AS capability
+	// has been evaluated.
+	asCapableEvaluated = true;
+
+	// Force an IPC update so that clients get notified of the change to
+	// asCapable.
+	{
+		Timestamp system_time;
+		Timestamp device_time;
+		uint32_t local_clock, nominal_clock_rate;
+		FrequencyRatio local_system_freq_offset;
+		int64_t local_system_offset;
+
+		getDeviceTime
+			( system_time, device_time,
+			  local_clock, nominal_clock_rate );
+
+		GPTP_LOG_VERBOSE
+			( "port::setAsCapable(): System time: %u,%u "
+			  "Device Time: %u,%u",
+			  system_time.seconds_ls,
+			  system_time.nanoseconds,
+			  device_time.seconds_ls,
+			  device_time.nanoseconds );
+
+		local_system_offset =
+			TIMESTAMP_TO_NS(system_time) -
+			TIMESTAMP_TO_NS(device_time);
+		local_system_freq_offset =
+			clock->calcLocalSystemClockRateDifference
+			( device_time, system_time );
+		// Use a master_local_offset of 0 and a master_local_freq_offset of 1
+		// so that there are no updates made to frequency values.
+		clock->setMasterOffset
+			( this, 0, device_time, 1.0,
+			  local_system_offset, system_time,
+			  local_system_freq_offset, getSyncCount(),
+			  pdelay_count, port_state, asCapable );
+	}
+}
+
 void CommonPort::startAnnounce()
 {
 	startAnnounceIntervalTimer(16000000);
