@@ -316,18 +316,8 @@ bool EtherPort::_processEvent( Event e )
 	case POWERUP:
 	case INITIALIZE:
 		// TODO: Start PDelay only if the link is up
-		if (!forceAsCapableEnabled()) {
-			if ( getPortState() != PTP_SLAVE &&
-			     getPortState() != PTP_MASTER )
-			{
-				GPTP_LOG_STATUS("Starting PDelay");
-				startPDelay();
-			}
-		}
-		else {
-			GPTP_LOG_STATUS("Starting PDelay");
-			startPDelay();
-		}
+		GPTP_LOG_STATUS("Starting PDelay");
+		startPDelay();
 
 		port_ready_condition->wait_prelock();
 

@@ -612,6 +612,7 @@ bool CommonPort::processEvent( Event e )
 	case INITIALIZE:
 		GPTP_LOG_DEBUG("Received POWERUP/INITIALIZE event");
 
+
 		// If port has been configured as master or slave, run media
 		// specific configuration. If it hasn't been configured
 		// start listening for announce messages
@@ -632,6 +633,42 @@ bool CommonPort::processEvent( Event e )
 
 		// Do any media specific initialization
 		ret = _processEvent( e );
+
+		// Force an initial IPC update so that clients can get initial data
+		{
+			Timestamp system_time;
+			Timestamp device_time;
+			uint32_t local_clock, nominal_clock_rate;
+			FrequencyRatio local_system_freq_offset;
+			int64_t local_system_offset;
+
+			getDeviceTime
+				( system_time, device_time,
+				  local_clock, nominal_clock_rate );
+
+			GPTP_LOG_VERBOSE
+				( "port::processEvent(): System time: %u,%u "
+				  "Device Time: %u,%u",
+				  system_time.seconds_ls,
+				  system_time.nanoseconds,
+				  device_time.seconds_ls,
+				  device_time.nanoseconds );
+
+			local_system_offset =
+				TIMESTAMP_TO_NS(system_time) -
+				TIMESTAMP_TO_NS(device_time);
+			local_system_freq_offset =
+				clock->calcLocalSystemClockRateDifference
+				( device_time, system_time );
+			// Use a master_local_offset of 0 and a master_local_freq_offset of 1
+			// so that there are no updates made to frequency values.
+			clock->setMasterOffset
+				( this, 0, device_time, 1.0,
+				  local_system_offset, system_time,
+				  local_system_freq_offset, getSyncCount(),
+				  pdelay_count, port_state, asCapable );
+		}
+
 		break;
 
 	case STATE_CHANGE_EVENT:
