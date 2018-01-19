@@ -1552,7 +1552,7 @@ void PTPMessagePathDelayRespFollowUp::processMessage
 		GPTP_LOG_DEBUG
 			("Received PDelay Response Follow Up but cannot find "
 			 "corresponding response");
-		GPTP_LOG_ERROR("%hu, %hu, %hu, %hu", resp->getSequenceId(),
+		GPTP_LOG_DEBUG("%hu, %hu, %hu, %hu", resp->getSequenceId(),
 				sequenceId, resp_port_number, req_port_number);
 
 		goto abort;
