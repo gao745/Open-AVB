@@ -78,7 +78,7 @@ void ClockIdentity::set(LinkLayerAddress * addr)
 }
 
 IEEE1588Clock::IEEE1588Clock
-( bool forceOrdinarySlave, bool syntonize, uint8_t priority1,
+( bool syntonize, uint8_t priority1,
   OSTimerQueueFactory *timerq_factory, OS_IPC *ipc,
   OSLockFactory *lock_factory )
 {
@@ -86,8 +86,6 @@ IEEE1588Clock::IEEE1588Clock
 	priority2 = 248;
 
 	number_ports = 0;
-
-	this->forceOrdinarySlave = forceOrdinarySlave;
 
     /*TODO: Make the values below configurable*/
 	clock_quality.clockAccuracy = 0x22;
@@ -357,7 +355,7 @@ void IEEE1588Clock::setMasterOffset
 	_master_local_freq_offset = master_local_freq_offset;
 	_local_system_freq_offset = local_system_freq_offset;
 
-	if (port->getTestMode()) {
+	if (port->testModeEnabled()) {
 		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u", 
 						master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
 	}
@@ -403,7 +401,7 @@ void IEEE1588Clock::setMasterOffset
 			/* Make sure that there are no transmit operations
 			   in progress */
 			getTxLockAll();
-			if (port->getTestMode()) {
+			if (port->testModeEnabled()) {
 				GPTP_LOG_STATUS("Adjust clock phase offset:%lld", -master_local_offset);
 			}
 			port->adjustClockPhase( -master_local_offset );
@@ -428,7 +426,7 @@ void IEEE1588Clock::setMasterOffset
 
 		if( _ppm < LOWER_FREQ_LIMIT ) _ppm = LOWER_FREQ_LIMIT;
 		if( _ppm > UPPER_FREQ_LIMIT ) _ppm = UPPER_FREQ_LIMIT;
-		if ( port->getTestMode() ) {
+		if ( port->testModeEnabled() ) {
 			GPTP_LOG_STATUS("Adjust clock rate ppm:%f", _ppm);
 		}
 		if( !port->adjustClockRate( _ppm ) ) {

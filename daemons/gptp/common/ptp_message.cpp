@@ -159,7 +159,7 @@ PTPMessageCommon *buildPTPMessage
 		GPTP_LOG_EXCEPTION("*** Received message with unsupported transportSpecific type=%d", transportSpecific);
 		goto abort;
 	}
- 
+
 	switch (messageType) {
 	case SYNC_MESSAGE:
 
@@ -863,7 +863,12 @@ void PTPMessageAnnounce::processMessage( EtherPort *port )
 	// Add message to the list
 	port->setQualifiedAnnounce( this );
 
-	port->getClock()->addEventTimerLocked(port, STATE_CHANGE_EVENT, 16000000);
+	// When externalPortConfiguration is disabled, the BMCA is used
+	if (!port->externalPortConfigurationEnabled()) {
+		port->getClock()->addEventTimerLocked(port, STATE_CHANGE_EVENT, 16000000);
+	} else {
+		port->processAnnounceExt();
+	}
  bail:
 	port->getClock()->addEventTimerLocked
 		(port, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES,
@@ -1693,12 +1698,13 @@ void PTPMessagePathDelayRespFollowUp::processMessage
 		}
 	}
 	if( !port->setLinkDelay( link_delay ) ) {
-		if (!port->getAutomotiveProfile() && (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
+		if( !port->forceAsCapableEnabled() &&
+			 (port->getAsCapable() || !port->getAsCapableEvaluated()) ) {
 			GPTP_LOG_STATUS("Link delay %ld beyond neighborPropDelayThresh; not AsCapable", link_delay);
 			port->setAsCapable( false );
 		}
 	} else {
-		if (!port->getAutomotiveProfile() && !port->getAsCapable() ) {
+		if( !port->forceAsCapableEnabled() && !port->getAsCapable() ) {
 			GPTP_LOG_STATUS("Link delay %ld within neighborPropDelayThresh; setting AsCapable", link_delay);
 			port->setAsCapable( true );
 		}
@@ -1885,7 +1891,7 @@ void PTPMessageSignalling::processMessage( EtherPort *port )
 		port->startSyncIntervalTimer(waitTime);
 	}
 
-	if (!port->getAutomotiveProfile()) {
+	if (port->transmitAnnounceEnabled()) {
 		if (announceInterval == PTPMessageSignalling::sigMsgInterval_Initial) {
 			// TODO: Needs implementation
 			GPTP_LOG_WARNING("Signal received to set Announce message to initial interval: Not implemented");

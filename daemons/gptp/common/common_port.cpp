@@ -38,13 +38,22 @@
 #include <gptp_cfg.hpp>
 
 CommonPort::CommonPort( PortInit_t *portInit ) :
+	port_state( PTP_INITIALIZING ),
+	externalPortConfiguration( portInit->externalPortConfiguration ),
+	staticPortState( portInit->staticPortState ),
+	transmitAnnounce( portInit->transmitAnnounce ),
+	forceAsCapable( portInit->forceAsCapable ),
+	negotiateAutomotiveSyncRate( portInit->negotiateAutomotiveSyncRate ),
+	automotiveStationStates( portInit->automotiveStationStates ),
+	testMode( portInit->testMode ),
+	asCapable( false ),
+	asCapableEvaluated( false ),
 	thread_factory( portInit->thread_factory ),
 	timer_factory( portInit->timer_factory ),
 	lock_factory( portInit->lock_factory ),
 	condition_factory( portInit->condition_factory ),
 	_hw_timestamper( portInit->timestamper ),
 	clock( portInit->clock ),
-	isGM( portInit->isGM ),
 	phy_delay( portInit->phy_delay )
 {
 	one_way_delay = ONE_WAY_DELAY_DEFAULT;
@@ -57,8 +66,6 @@ CommonPort::CommonPort( PortInit_t *portInit ) :
 	_peer_rate_offset = 1.0;
 	_peer_offset_init = false;
 	ifindex = portInit->index;
-	testMode = false;
-	port_state = PTP_INITIALIZING;
 	clock->registerPort(this, ifindex);
 	qualified_announce = NULL;
 	announce_sequence_id = 0;
@@ -67,8 +74,10 @@ CommonPort::CommonPort( PortInit_t *portInit ) :
 	initialLogSyncInterval = portInit->initialLogSyncInterval;
 	log_mean_announce_interval = 0;
 	pdelay_count = 0;
-	asCapable = false;
 	link_speed = INVALID_LINKSPEED;
+
+	if( externalPortConfiguration ) { setPortState(staticPortState); }
+	if( forceAsCapable ) { setAsCapable(true); }
 }
 
 CommonPort::~CommonPort()
@@ -127,6 +136,55 @@ PTPMessageAnnounce *CommonPort::calculateERBest( void )
 {
 	return qualified_announce;
 }
+
+/* Helper function to process announce messages when externalPortConfiguration
+ * is enabled. */
+void CommonPort::processAnnounceExt( void )
+{
+	PTPMessageAnnounce *EBest = NULL;
+
+	// When defaultDS.externalPortConfiguration is enabled,
+	// port_state is either master or slave.
+	// If port state is master, our port is always the grandmaster,
+	// so we ignore received announce messages.
+	// If port state is slave, process the received announce information
+	// as if the BMCA selected that grandmaster.
+	if (getStaticPortState() == PTP_SLAVE) {
+		GPTP_LOG_DEBUG( "The port is slave state. Process the received announce information" );
+		// Retrieve the most recently received announce.
+		EBest = calculateERBest();
+		// If it is NULL for some reason, do nothing.
+		if (EBest == NULL) { return; }
+
+		// Check if we've changed grandmaster. In a properly configured
+		// network, this should occur only once, since only one system
+		// should be sending announce (if at all).
+		uint8_t LastEBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
+		char EBestClockIdentity[PTP_CLOCK_IDENTITY_LENGTH];
+		clock->getLastEBestIdentity().getIdentityString(LastEBestClockIdentity);
+		EBest->getGrandmasterIdentity(EBestClockIdentity);
+		if (memcmp(EBestClockIdentity, LastEBestClockIdentity,
+			 PTP_CLOCK_IDENTITY_LENGTH) != 0) {
+			GPTP_LOG_DEBUG( "Grandmaster is changed. The new grandmaster is %s", EBestClockIdentity );
+			ClockIdentity clock_identity;
+			unsigned char priority1;
+			unsigned char priority2;
+			ClockQuality *clock_quality;
+			clock_identity.set((uint8_t *)EBestClockIdentity);
+			getClock()->setLastEBestIdentity(clock_identity);
+			getClock()->setGrandmasterClockIdentity(clock_identity);
+			priority1 = EBest->getGrandmasterPriority1();
+			getClock()->setGrandmasterPriority1(priority1);
+			priority2 = EBest->getGrandmasterPriority2();
+			getClock()->setGrandmasterPriority2(priority2);
+			clock_quality = EBest->getGrandmasterClockQuality();
+			getClock()->setGrandmasterClockQuality(*clock_quality);
+		}
+	} else {
+		GPTP_LOG_DEBUG( "The port is always grandmaster. Ignore received announce messages." );
+	}
+}
+
 
 void CommonPort::recommendState
 ( PortState state, bool changed_external_master )
@@ -477,6 +535,10 @@ bool CommonPort::processSyncAnnounceTimeout( Event e )
 	Timestamp device_time;
 	uint32_t local_clock, nominal_clock_rate;
 
+	// Exit early, sync and announce timeouts shouldn't have been enabled when
+	// externalPortConfiguration is enabled.
+	if( externalPortConfigurationEnabled() ) { return true; };
+
 	// Nothing to do
 	if( clock->getPriority1() == 255 )
 		return true;
@@ -528,7 +590,9 @@ bool CommonPort::processSyncAnnounceTimeout( Event e )
 		( this, SYNC_INTERVAL_TIMEOUT_EXPIRES,
 		  16000000 );
 
-	startAnnounce();
+	if( transmitAnnounceEnabled() ) {
+		startAnnounce();
+	}
 
 	return true;
 }
@@ -547,6 +611,7 @@ bool CommonPort::processEvent( Event e )
 	case POWERUP:
 	case INITIALIZE:
 		GPTP_LOG_DEBUG("Received POWERUP/INITIALIZE event");
+
 
 		// If port has been configured as master or slave, run media
 		// specific configuration. If it hasn't been configured
@@ -568,6 +633,42 @@ bool CommonPort::processEvent( Event e )
 
 		// Do any media specific initialization
 		ret = _processEvent( e );
+
+		// Force an initial IPC update so that clients can get initial data
+		{
+			Timestamp system_time;
+			Timestamp device_time;
+			uint32_t local_clock, nominal_clock_rate;
+			FrequencyRatio local_system_freq_offset;
+			int64_t local_system_offset;
+
+			getDeviceTime
+				( system_time, device_time,
+				  local_clock, nominal_clock_rate );
+
+			GPTP_LOG_VERBOSE
+				( "port::processEvent(): System time: %u,%u "
+				  "Device Time: %u,%u",
+				  system_time.seconds_ls,
+				  system_time.nanoseconds,
+				  device_time.seconds_ls,
+				  device_time.nanoseconds );
+
+			local_system_offset =
+				TIMESTAMP_TO_NS(system_time) -
+				TIMESTAMP_TO_NS(device_time);
+			local_system_freq_offset =
+				clock->calcLocalSystemClockRateDifference
+				( device_time, system_time );
+			// Use a master_local_offset of 0 and a master_local_freq_offset of 1
+			// so that there are no updates made to frequency values.
+			clock->setMasterOffset
+				( this, 0, device_time, 1.0,
+				  local_system_offset, system_time,
+				  local_system_freq_offset, getSyncCount(),
+				  pdelay_count, port_state, asCapable );
+		}
+
 		break;
 
 	case STATE_CHANGE_EVENT:
@@ -689,6 +790,60 @@ void CommonPort::getDeviceTime
 	}
 
 	return;
+}
+
+void CommonPort::setAsCapable(bool ascap)
+{
+	if ( ascap != asCapable ) {
+		GPTP_LOG_STATUS
+			("AsCapable: %s", ascap == true
+			 ? "Enabled" : "Disabled");
+	}
+	if( !ascap )
+	{
+		_peer_offset_init = false;
+	}
+	asCapable = ascap;
+
+	// Assumes that a call to setAsCapable() means that 802.1AS capability
+	// has been evaluated.
+	asCapableEvaluated = true;
+
+	// Force an IPC update so that clients get notified of the change to
+	// asCapable.
+	{
+		Timestamp system_time;
+		Timestamp device_time;
+		uint32_t local_clock, nominal_clock_rate;
+		FrequencyRatio local_system_freq_offset;
+		int64_t local_system_offset;
+
+		getDeviceTime
+			( system_time, device_time,
+			  local_clock, nominal_clock_rate );
+
+		GPTP_LOG_VERBOSE
+			( "port::setAsCapable(): System time: %u,%u "
+			  "Device Time: %u,%u",
+			  system_time.seconds_ls,
+			  system_time.nanoseconds,
+			  device_time.seconds_ls,
+			  device_time.nanoseconds );
+
+		local_system_offset =
+			TIMESTAMP_TO_NS(system_time) -
+			TIMESTAMP_TO_NS(device_time);
+		local_system_freq_offset =
+			clock->calcLocalSystemClockRateDifference
+			( device_time, system_time );
+		// Use a master_local_offset of 0 and a master_local_freq_offset of 1
+		// so that there are no updates made to frequency values.
+		clock->setMasterOffset
+			( this, 0, device_time, 1.0,
+			  local_system_offset, system_time,
+			  local_system_freq_offset, getSyncCount(),
+			  pdelay_count, port_state, asCapable );
+	}
 }
 
 void CommonPort::startAnnounce()

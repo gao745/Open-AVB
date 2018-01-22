@@ -214,15 +214,27 @@ typedef struct {
 	/* net_label Network label */
 	InterfaceLabel *net_label;
 
-	/* automotive_profile set the AVnu automotive profile */
-	bool automotive_profile;
+	/* Set to true to disable the BMCA. Used in the AVnu automotive profile */
+	bool externalPortConfiguration;
 
-	/* Set to true if the port is the grandmaster. Used for fixed GM in
-	 * the the AVnu automotive profile */
-	bool isGM;
+	/* Static port state to use when externalPortConfiguration is enabled */
+	PortState staticPortState;
 
-	/* Set to true if the port is the grandmaster. Used for fixed GM in
-	 * the the AVnu automotive profile */
+	/* Set to true to enable transmission of announce messages */
+	bool transmitAnnounce;
+
+	/* Set to true to force asCapable to always be true */
+	bool forceAsCapable;
+
+	/* Set to true to enable the automotive sync rate signalling message.
+	 * With this enabled, a slave will request an initial sync rate of 31.25ms
+	 * and will then request a slower sync rate once it has synchronized. */
+	bool negotiateAutomotiveSyncRate;
+
+	/* Set to true to enable autmotive station states to be used */
+	bool automotiveStationStates;
+
+	/* Set to true to enable automotive test mode messages */
 	bool testMode;
 
 	/* Set to true if the port's network interface is up. Used to filter
@@ -312,7 +324,15 @@ private:
 	OSNetworkInterface *net_iface;
 
 	PortState port_state;
-	bool testMode;
+
+	/* Variables to control features. */
+	const bool externalPortConfiguration;
+	const PortState staticPortState;
+	const bool transmitAnnounce;
+	const bool forceAsCapable;
+	const bool negotiateAutomotiveSyncRate;
+	const bool automotiveStationStates;
+	const bool testMode;
 
 	signed char log_mean_sync_interval;
 	signed char log_mean_announce_interval;
@@ -359,7 +379,6 @@ protected:
 	OSConditionFactory const * const condition_factory;
 	CommonTimestamper * const _hw_timestamper;
 	IEEE1588Clock * const clock;
-	const bool isGM;
 
 	phy_delay_map_t const * const phy_delay;
 
@@ -455,21 +474,73 @@ public:
 	}
 
 	/**
-	 * @brief  Gets the testMode
-	 * @return bool of the test mode value
+	 * @brief  Indicates if externalPortConfiguration is enabled (the BMCA is
+	 * disabled).
+	 * @return True if externalPortConfiguration is enabled and false otherwise.
 	 */
-	bool getTestMode( void )
+	bool externalPortConfigurationEnabled()
 	{
-		return testMode;
+		return externalPortConfiguration;
 	}
 
 	/**
-	 * @brief  Sets the testMode
-	 * @param testMode changes testMode to this value
+	 * @brief  Gets the static port state that should be used if
+	 * externalPortConfiguration is enabled.
+	 * @return The static port state
 	 */
-	void setTestMode( bool testMode )
+	PortState getStaticPortState()
 	{
-		this->testMode = testMode;
+		return staticPortState;
+	}
+
+	/**
+	 * @brief  Indicates if announce messages should be transmitted or not.
+	 * @return True if announce messages should be transmitted and false
+	 * otherwise.
+	 */
+	bool transmitAnnounceEnabled()
+	{
+		return transmitAnnounce;
+	}
+
+	/**
+	 * @brief  Indicates if asCapable should always be set to true.
+	 * @return True if asCapable should always be set to true and false
+	 * otherwise.
+	 */
+	bool forceAsCapableEnabled()
+	{
+		return forceAsCapable;
+	}
+
+	/**
+	 * @brief  Indicates if the automotive sync rates should be negotiated by a
+	 * slave.
+	 * @return True if automtive sync rates signalling messages should be sent
+	 * and false otherwise.
+	 */
+	bool negotiateAutomotiveSyncRateEnabled()
+	{
+		return negotiateAutomotiveSyncRate;
+	}
+
+	/**
+	 * @brief  Indicates if automotive station states should be used.
+	 * @return True if automotive station states should be used and false
+	 * otherwise.
+	 */
+	bool automotiveStationStatesEnabled()
+	{
+		return automotiveStationStates;
+	}
+
+	/**
+	 * @brief  Indicates if test mode messages should be used.
+	 * @return True if test mode messages should be used and false otherwise.
+	 */
+	bool testModeEnabled( void )
+	{
+		return testMode;
 	}
 
 	/**
@@ -883,23 +954,7 @@ public:
 	 * false.
 	 * @return void
 	 */
-	void setAsCapable(bool ascap)
-	{
-		if ( ascap != asCapable ) {
-			GPTP_LOG_STATUS
-				("AsCapable: %s", ascap == true
-				 ? "Enabled" : "Disabled");
-		}
-		if( !ascap )
-		{
-			_peer_offset_init = false;
-		}
-		asCapable = ascap;
-
-		// Assumes that a call to setAsCapable() means that 802.1AS capability
-		// has been evaluated.
-		asCapableEvaluated = true;
-	}
+	void setAsCapable(bool ascap);
 
 	/**
 	 * @brief  Reinitializes the asCapable variables
@@ -1343,6 +1398,11 @@ public:
 	 */
 	bool processSyncAnnounceTimeout( Event e );
 
+	/**
+	 * @brief  Process received announce when externalPortConfiguration enabled
+	 * @return void
+	 */
+	void processAnnounceExt(void);
 
 	/**
 	 * @brief Perform default event action, can be overridden by media
