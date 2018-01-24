@@ -229,13 +229,13 @@ int main(int argc, char **argv)
 
 	if( sd < 0 )
 	{
-		GPTP_LOG_ERROR( "isLinkUp: Failed to open socket: %s", strerror( errno ) );
+		GPTP_LOG_ERROR( "Failed to open socket: %s", strerror( errno ) );
 		return -1;
 	}
 
 	if( ioctl( sd, SIOCGIFFLAGS, static_cast< void* >( &ifr ) ) < 0 )
 	{
-		GPTP_LOG_ERROR( "isLinkUp: ioctl(SIOCGIFFLAGS) got error: %s", strerror( errno ) );
+		GPTP_LOG_ERROR( "Failed ioctl(SIOCGIFFLAGS) got error: %s", strerror( errno ) );
 		close(sd);
 		return -1;
 	}
