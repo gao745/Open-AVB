@@ -315,21 +315,20 @@ bool EtherPort::_processEvent( Event e )
 	switch (e) {
 	case POWERUP:
 	case INITIALIZE:
-		// TODO: Start PDelay only if the link is up
-		GPTP_LOG_STATUS("Starting PDelay");
-		startPDelay();
+		if( getLinkUpState() ) {
+			GPTP_LOG_STATUS("Starting PDelay");
+			startPDelay();
+		}
 
 		port_ready_condition->wait_prelock();
 
-		if( !linkWatch(watchNetLinkWrapper, (void *)this) )
-		{
+		if( !linkWatch(watchNetLinkWrapper, (void *)this) ) {
 			GPTP_LOG_ERROR("Error creating port link thread");
 			ret = false;
 			break;
 		}
 
-		if( !linkOpen(openPortWrapper, (void *)this) )
-		{
+		if( !linkOpen(openPortWrapper, (void *)this) ) {
 			GPTP_LOG_ERROR("Error creating port thread");
 			ret = false;
 			break;
@@ -341,8 +340,7 @@ bool EtherPort::_processEvent( Event e )
 			setStationState(STATION_STATE_ETHERNET_READY);
 		}
 
-		if (testModeEnabled())
-		{
+		if (testModeEnabled()) {
 			APMessageTestStatus *testStatusMsg = new APMessageTestStatus(this);
 			if (testStatusMsg) {
 				testStatusMsg->sendPort(this);
@@ -906,7 +904,7 @@ void EtherPort::syncDone() {
 		}
 	}
 
-	if( !pdelay_started ) {
+	if( !pdelay_started && getLinkUpState() ) {
 		startPDelay();
 	}
 }

@@ -55,6 +55,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 
 #ifdef SYSTEMD_WATCHDOG
 #include <watchdog.hpp>
@@ -190,7 +192,6 @@ int main(int argc, char **argv)
 	portInit.negotiateAutomotiveSyncRate = false;
 	portInit.automotiveStationStates = false;
 	portInit.testMode = false;
-	portInit.linkUp = false;
 	portInit.initialLogSyncInterval = LOG2_INTERVAL_INVALID;
 	portInit.initialLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
 	portInit.operLogPdelayReqInterval = LOG2_INTERVAL_INVALID;
@@ -220,6 +221,26 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	ifname = new InterfaceName( argv[1], strlen(argv[1]) );
+
+	struct ifreq ifr;
+	memset( &ifr, '\0', sizeof( ifr ) );
+	snprintf( ifr.ifr_name, IFNAMSIZ, "%s", argv[1] );
+	const int sd = socket( AF_UNIX, SOCK_DGRAM, 0 );
+
+	if( sd < 0 )
+	{
+		GPTP_LOG_ERROR( "isLinkUp: Failed to open socket: %s", strerror( errno ) );
+		return -1;
+	}
+
+	if( ioctl( sd, SIOCGIFFLAGS, static_cast< void* >( &ifr ) ) < 0 )
+	{
+		GPTP_LOG_ERROR( "isLinkUp: ioctl(SIOCGIFFLAGS) got error: %s", strerror( errno ) );
+		close(sd);
+		return -1;
+	}
+	close(sd);
+	portInit.linkUp = ( ifr.ifr_flags & IFF_RUNNING );
 
 	/* Check arguments and determine if automotive profile is enabled */
 	for( i = 2; i < argc; ++i ) {
