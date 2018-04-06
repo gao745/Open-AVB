@@ -796,18 +796,12 @@ void CommonPort::setAsCapable(bool ascap)
 {
 	if ( ascap != asCapable ) {
 		GPTP_LOG_STATUS
-			("AsCapable: %s", ascap == true
-			 ? "Enabled" : "Disabled");
+			("AsCapable: %s", ascap == true ? "Enabled" : "Disabled");
 	}
 	if( !ascap )
 	{
 		_peer_offset_init = false;
 	}
-	asCapable = ascap;
-
-	// Assumes that a call to setAsCapable() means that 802.1AS capability
-	// has been evaluated.
-	asCapableEvaluated = true;
 
 	// Force an IPC update so that clients get notified of the change to
 	// asCapable.
@@ -842,8 +836,15 @@ void CommonPort::setAsCapable(bool ascap)
 			( this, 0, device_time, 1.0,
 			  local_system_offset, system_time,
 			  local_system_freq_offset, getSyncCount(),
-			  pdelay_count, port_state, asCapable );
+			  pdelay_count, port_state, ascap );
 	}
+
+	// Set asCapable after the ipc returns
+	asCapable = ascap;
+
+	// Assumes that a call to setAsCapable() means that 802.1AS capability
+	// has been evaluated.
+	asCapableEvaluated = true;
 }
 
 void CommonPort::startAnnounce()
