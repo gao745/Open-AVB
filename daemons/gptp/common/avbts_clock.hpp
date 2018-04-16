@@ -160,6 +160,7 @@ private:
     FollowUpTLV *fup_status;
 
     OSLock *timerq_lock;
+    OSLock *ipc_lock;
 
 	/**
 	 * @brief  Add a new event to the timer queue
@@ -667,6 +668,15 @@ public:
   OSLock *timerQLock() {
 	  return timerq_lock;
   }
+
+  bool getIpcLock() {
+     return ipc_lock->lock() == oslock_ok ? true : false;
+  }
+
+  bool putIpcLock() {
+     return ipc_lock->unlock() == oslock_ok ? true : false;
+  }
+
 };
 
 void tick_handler(int sig);

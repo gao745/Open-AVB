@@ -110,6 +110,7 @@ IEEE1588Clock::IEEE1588Clock
  	memset( &LastEBestIdentity, 0xFF, sizeof( LastEBestIdentity ));
 
 	timerq_lock = lock_factory->createLock( oslock_recursive );
+	ipc_lock = lock_factory->createLock( oslock_recursive );
 
 	// This should be done LAST!! to pass fully initialized clock object
 	timerq = timerq_factory->createOSTimerQueue( this );
@@ -356,11 +357,12 @@ void IEEE1588Clock::setMasterOffset
 	_local_system_freq_offset = local_system_freq_offset;
 
 	if (port->testModeEnabled()) {
-		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u", 
-						master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
+		GPTP_LOG_STATUS("Clock offset:%lld   Clock rate ratio:%Lf   Sync Count:%u   PDelay Count:%u",
+		                 master_local_offset, master_local_freq_offset, sync_count, pdelay_count);
 	}
 
-	if( ipc != NULL ) {
+	if( ipc != NULL && getIpcLock() ) {
+
 		uint8_t grandmaster_id[PTP_CLOCK_IDENTITY_LENGTH];
 		uint8_t clock_id[PTP_CLOCK_IDENTITY_LENGTH];
 		PortIdentity port_identity;
@@ -381,13 +383,15 @@ void IEEE1588Clock::setMasterOffset
 
 		ipc->update_network_interface(
 			clock_id, priority1,
-			clock_quality.cq_class,	clock_quality.offsetScaledLogVariance,
+			clock_quality.cq_class, clock_quality.offsetScaledLogVariance,
 			clock_quality.clockAccuracy,
 			priority2, domain_number,
 			port->getSyncInterval(),
 			port->getAnnounceInterval(),
-			0, // TODO:  Was port->getPDelayInterval() before refactoring.  What do we do now?
+			0, // TODO: Was port->getPDelayInterval() before refactoring. What do we do now?
 			port_number);
+
+		putIpcLock();
 	}
 
 	if( master_local_offset == 0 && master_local_freq_offset == 1.0 ) {
