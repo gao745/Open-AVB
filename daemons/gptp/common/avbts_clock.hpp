@@ -162,7 +162,9 @@ private:
 
     OSLock *timerq_lock;
 
-	/**
+public:
+	
+    /**
 	 * @brief  Add a new event to the timer queue
 	 * @param  target EtherPort target
 	 * @param  e Event to be added
@@ -179,7 +181,7 @@ private:
 	 * @return void
 	 */
 	void deleteEventTimer( CommonPort *target, Event e );
-public:
+
   /**
    * @brief Instantiates a IEEE 1588 Clock
    * @param forceOrdinarySlave Forces it to be an ordinary slave
@@ -549,6 +551,15 @@ public:
     int64_t local_system_offset, Timestamp system_time,
     FrequencyRatio local_system_freq_offset, unsigned sync_count,
     unsigned pdelay_count, PortState port_state, bool asCapable );
+
+	/**
+	 * @brief  Get local:system frequency ratio
+	 * @return clock ratio
+	 */
+	FrequencyRatio getLocalSystemFreqOffset()
+	{
+		return _local_system_freq_offset;
+	}
 
   /**
    * @brief  Get the IEEE1588Clock identity value

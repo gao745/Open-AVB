@@ -61,9 +61,11 @@ CommonPort::CommonPort( PortInit_t *portInit ) :
 	port_state = PTP_INITIALIZING;
 	clock->registerPort(this, ifindex);
 	qualified_announce = NULL;
+	automotive_profile = portInit->automotive_profile;
 	announce_sequence_id = 0;
 	signal_sequence_id = 0;
 	sync_sequence_id = 0;
+	initialLogPdelayReqInterval = portInit->initialLogPdelayReqInterval;
 	initialLogSyncInterval = portInit->initialLogSyncInterval;
 	log_mean_announce_interval = 0;
 	pdelay_count = 0;
@@ -294,18 +296,22 @@ bool CommonPort::restoreSerializedState
 void CommonPort::startSyncReceiptTimer
 ( long long unsigned int waitTime )
 {
+	clock->getTimerQLock();
 	syncReceiptTimerLock->lock();
-	clock->deleteEventTimerLocked( this, SYNC_RECEIPT_TIMEOUT_EXPIRES );
-	clock->addEventTimerLocked
+	clock->deleteEventTimer( this, SYNC_RECEIPT_TIMEOUT_EXPIRES );
+	clock->addEventTimer
 		( this, SYNC_RECEIPT_TIMEOUT_EXPIRES, waitTime );
 	syncReceiptTimerLock->unlock();
+	clock->putTimerQLock();
 }
 
 void CommonPort::stopSyncReceiptTimer( void )
 {
+	clock->getTimerQLock();
 	syncReceiptTimerLock->lock();
-	clock->deleteEventTimerLocked( this, SYNC_RECEIPT_TIMEOUT_EXPIRES );
+	clock->deleteEventTimer( this, SYNC_RECEIPT_TIMEOUT_EXPIRES );
 	syncReceiptTimerLock->unlock();
+	clock->putTimerQLock();
 }
 
 void CommonPort::startSyncIntervalTimer
@@ -563,7 +569,7 @@ bool CommonPort::processEvent( Event e )
 		else
 		{
 			clock->addEventTimerLocked(this, ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES,
-				ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER * pow(2.0, getAnnounceInterval()) * 1000000000.0);
+				(uint64_t) ( ANNOUNCE_RECEIPT_TIMEOUT_MULTIPLIER * pow(2.0, getAnnounceInterval()) * 1000000000.0 ));
 		}
 
 		// Do any media specific initialization
@@ -730,6 +736,11 @@ bool CommonPort::adjustClockPhase( int64_t phase_adjust )
 			HWTimestamper_adjclockphase( phase_adjust );
 
 	return false;
+}
+
+FrequencyRatio CommonPort::getLocalSystemFreqOffset()
+{
+	return clock->getLocalSystemFreqOffset();
 }
 
 Timestamp CommonPort::getTxPhyDelay( uint32_t link_speed ) const
