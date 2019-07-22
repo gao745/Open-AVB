@@ -642,7 +642,7 @@ bool CommonPort::processEvent( Event e )
 			FrequencyRatio local_system_freq_offset;
 			int64_t local_system_offset;
          uint64_t mean_path_delay;
-         
+
          getLinkDelay
          	( &mean_path_delay );
 
@@ -741,10 +741,7 @@ bool CommonPort::processEvent( Event e )
 			FrequencyRatio local_system_freq_offset;
 			int64_t local_system_offset;
          uint64_t mean_path_delay;
-         
-         getLinkDelay
-         	( &mean_path_delay );
-         
+
          getLinkDelay
          	( &mean_path_delay );
 
@@ -823,7 +820,7 @@ void CommonPort::setAsCapable(bool ascap)
 		FrequencyRatio local_system_freq_offset;
 		int64_t local_system_offset;
       uint64_t mean_path_delay;
-         
+
       getLinkDelay
          ( &mean_path_delay );
 
