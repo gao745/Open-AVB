@@ -117,7 +117,7 @@ void gptpLog(GPTP_LOG_LEVEL level, const char *tag, const char *path, int line, 
 			   tag, tmNow.tm_hour, tmNow.tm_min, tmNow.tm_sec, millis, msg);
 	}
 #else
-	DltLogLevelType dlt_level; 
+	DltLogLevelType dlt_level;
 
 	switch (level) {
 	case GPTP_LOG_LVL_CRITICAL:
