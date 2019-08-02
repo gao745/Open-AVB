@@ -819,7 +819,7 @@ void CommonPort::setAsCapable(bool ascap)
 		uint32_t local_clock, nominal_clock_rate;
 		FrequencyRatio local_system_freq_offset;
 		int64_t local_system_offset;
-      uint64_t mean_path_delay;
+      		uint64_t mean_path_delay;
 
       getLinkDelay
          ( &mean_path_delay );
