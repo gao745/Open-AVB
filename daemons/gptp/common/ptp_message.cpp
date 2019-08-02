@@ -1142,7 +1142,7 @@ void PTPMessageFollowUp::processMessage( EtherPort *port )
 			  local_system_offset, system_time, local_system_freq_offset,
 			  port->getSyncCount(), port->getPdelayCount(),
 			  port->getPortState(), port->getAsCapable(),
-           port->getLinkDelay() );
+           		  port->getLinkDelay() );
 		port->syncDone();
 		// Restart the SYNC_RECEIPT timer
 		port->startSyncReceiptTimer((unsigned long long)
