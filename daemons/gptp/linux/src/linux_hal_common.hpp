@@ -668,7 +668,8 @@ public:
 		uint32_t sync_count,
 		uint32_t pdelay_count,
 		PortState port_state,
-		bool asCapable );
+		bool asCapable,
+		uint64_t mean_path_delay );
 
 	/**
 	 * @brief Updates grandmaster IPC values

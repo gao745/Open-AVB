@@ -641,6 +641,10 @@ bool CommonPort::processEvent( Event e )
 			uint32_t local_clock, nominal_clock_rate;
 			FrequencyRatio local_system_freq_offset;
 			int64_t local_system_offset;
+			uint64_t mean_path_delay;
+
+			getLinkDelay
+				( &mean_path_delay );
 
 			getDeviceTime
 				( system_time, device_time,
@@ -666,7 +670,7 @@ bool CommonPort::processEvent( Event e )
 				( this, 0, device_time, 1.0,
 				  local_system_offset, system_time,
 				  local_system_freq_offset, getSyncCount(),
-				  pdelay_count, port_state, asCapable );
+				  pdelay_count, port_state, asCapable, mean_path_delay );
 		}
 
 		break;
@@ -736,6 +740,10 @@ bool CommonPort::processEvent( Event e )
 			uint32_t local_clock, nominal_clock_rate;
 			FrequencyRatio local_system_freq_offset;
 			int64_t local_system_offset;
+			uint64_t mean_path_delay;
+
+			getLinkDelay
+				( &mean_path_delay );
 
 			getDeviceTime
 				( system_time, device_time,
@@ -759,7 +767,7 @@ bool CommonPort::processEvent( Event e )
 				( this, 0, device_time, 1.0,
 				  local_system_offset, system_time,
 				  local_system_freq_offset, getSyncCount(),
-				  pdelay_count, port_state, asCapable );
+				  pdelay_count, port_state, asCapable, mean_path_delay );
 		}
 
 		// Call media specific action for completed sync
@@ -811,6 +819,10 @@ void CommonPort::setAsCapable(bool ascap)
 		uint32_t local_clock, nominal_clock_rate;
 		FrequencyRatio local_system_freq_offset;
 		int64_t local_system_offset;
+		uint64_t mean_path_delay;
+
+		getLinkDelay
+			( &mean_path_delay );
 
 		getDeviceTime
 			( system_time, device_time,
@@ -836,7 +848,7 @@ void CommonPort::setAsCapable(bool ascap)
 			( this, 0, device_time, 1.0,
 			  local_system_offset, system_time,
 			  local_system_freq_offset, getSyncCount(),
-			  pdelay_count, port_state, ascap );
+			  pdelay_count, port_state, ascap, mean_path_delay );
 	}
 
 	// Set asCapable after the ipc returns
